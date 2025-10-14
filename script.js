@@ -2,7 +2,8 @@ document.getElementById('convertBtn').addEventListener('click', async () => {
   const input = document.getElementById('spotifyLink').value.trim();
   const statusDiv = document.getElementById('status');
   const resultDiv = document.getElementById('result');
-  const heading = document.getElementById('heading');
+  const heading = document.querySelector('h1');
+
 
   // Reset UI
   statusDiv.textContent = '';
