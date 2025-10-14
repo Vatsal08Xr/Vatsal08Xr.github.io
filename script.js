@@ -2,20 +2,19 @@ document.getElementById('convertBtn').addEventListener('click', async () => {
   const input = document.getElementById('spotifyLink').value.trim();
   const statusDiv = document.getElementById('status');
   const resultDiv = document.getElementById('result');
-  const heading = document.querySelector('h1');
-
+  const heading = document.getElementById('heading');
 
   // Reset UI
   statusDiv.textContent = '';
   resultDiv.innerHTML = '';
-  heading.innerHTML = 'Spotify → <span class="ytm">YouTube Music</span>';
 
   if (!input) {
+    heading.innerHTML = 'Spoti2YTM';
     statusDiv.textContent = '❌ Please enter a Spotify or YouTube Music link.';
     return;
   }
 
-  const proxyUrl = 'https://spotify-proxy-1.onrender.com'; // ✅ No space!
+  const proxyUrl = 'https://spotify-proxy-1.onrender.com';
 
   // Regex patterns
   const spotifyRegex = /https?:\/\/open\.spotify\.com\/track\/([a-zA-Z0-9]+)/;
@@ -27,7 +26,7 @@ document.getElementById('convertBtn').addEventListener('click', async () => {
   try {
     if (spotifyMatch) {
       // 🟢 Spotify → YouTube Music
-      heading.innerHTML = 'Spotify → <span class="ytm">YouTube Music</span>';
+      heading.innerHTML = '<span class="spotify">Spotify</span> → <span class="ytm">YouTube Music</span>';
       
       const trackId = spotifyMatch[1].split('?')[0];
       statusDiv.textContent = '🔍 Fetching song info...';
@@ -59,7 +58,7 @@ document.getElementById('convertBtn').addEventListener('click', async () => {
 
     } else if (ytMatch) {
       // 🔴 YouTube Music → Spotify
-      heading.innerHTML = '<span class="ytm">YouTube Music</span> → Spotify';
+      heading.innerHTML = '<span class="ytm">YouTube Music</span> → <span class="spotify">Spotify</span>';
       
       const videoId = ytMatch[1];
       statusDiv.textContent = '🔍 Fetching video info...';
@@ -85,6 +84,7 @@ document.getElementById('convertBtn').addEventListener('click', async () => {
       `;
 
     } else {
+      heading.innerHTML = 'Spoti2YTM';
       throw new Error('Unsupported link. Use a Spotify or YouTube Music track link.');
     }
 
