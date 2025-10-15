@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Search for both YouTube Music and Apple Music
     const [ytmResult, amResult] = await Promise.allSettled([
       searchYouTubeMusic(title, artist),
-      searchAppleMusic(title, artist)
+      searchAppleMusicDirect(title, artist) // Use direct Apple Music search
     ]);
 
     displayResults(title, artist, {
@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Search for both Spotify and Apple Music
     const [spotifyResult, amResult] = await Promise.allSettled([
       searchSpotify(artist ? `${cleanTitle} ${artist}` : cleanTitle),
-      searchAppleMusic(cleanTitle, artist || '')
+      searchAppleMusicDirect(cleanTitle, artist || '')
     ]);
 
     const spotifyData = spotifyResult.status === 'fulfilled' ? spotifyResult.value : null;
@@ -354,41 +354,70 @@ document.addEventListener('DOMContentLoaded', () => {
     return await spotifySearchRes.json();
   }
 
-  async function searchAppleMusic(title, artist) {
+  async function searchAppleMusicDirect(title, artist) {
     const searchQuery = artist ? `${title} ${artist}` : title;
+    
+    console.log('Searching Apple Music for:', searchQuery);
+    
+    // Method 1: Try your proxy first
     try {
       const amSearchRes = await fetch(`${proxyUrl}/search-apple?q=${encodeURIComponent(searchQuery)}`);
-      
       if (amSearchRes.ok) {
-        const { url } = await amSearchRes.json();
-        return {
-          url: url,
-          title: title,
-          artist: artist || 'Unknown Artist'
-        };
-      }
-    } catch (error) {
-      console.log('Apple Music search not available');
-    }
-    
-    // Fallback: Try iTunes API directly
-    try {
-      const itunesResponse = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchQuery)}&entity=song&limit=1`);
-      if (itunesResponse.ok) {
-        const data = await itunesResponse.json();
-        if (data.results && data.results.length > 0) {
-          const track = data.results[0];
+        const result = await amSearchRes.json();
+        if (result.url) {
+          console.log('Found via proxy:', result.url);
           return {
-            url: track.trackViewUrl,
-            title: track.trackName,
-            artist: track.artistName
+            url: result.url,
+            title: title,
+            artist: artist || 'Unknown Artist'
           };
         }
       }
     } catch (error) {
-      console.log('iTunes API fallback also failed');
+      console.log('Proxy Apple Music search failed:', error);
     }
     
+    // Method 2: Use iTunes Search API directly (more reliable)
+    try {
+      const itunesResponse = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchQuery)}&entity=song&limit=1&media=music`);
+      if (itunesResponse.ok) {
+        const data = await itunesResponse.json();
+        if (data.results && data.results.length > 0) {
+          const track = data.results[0];
+          console.log('Found via iTunes API:', track.trackViewUrl);
+          return {
+            url: track.trackViewUrl,
+            title: track.trackName || title,
+            artist: track.artistName || artist || 'Unknown Artist'
+          };
+        }
+      }
+    } catch (error) {
+      console.log('iTunes API search failed:', error);
+    }
+    
+    // Method 3: Try with just the title if artist search failed
+    if (artist) {
+      try {
+        const itunesResponse = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(title)}&entity=song&limit=1&media=music`);
+        if (itunesResponse.ok) {
+          const data = await itunesResponse.json();
+          if (data.results && data.results.length > 0) {
+            const track = data.results[0];
+            console.log('Found via iTunes API (title only):', track.trackViewUrl);
+            return {
+              url: track.trackViewUrl,
+              title: track.trackName || title,
+              artist: track.artistName || artist || 'Unknown Artist'
+            };
+          }
+        }
+      } catch (error) {
+        console.log('iTunes API title-only search failed:', error);
+      }
+    }
+    
+    console.log('No Apple Music match found');
     return null;
   }
 
