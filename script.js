@@ -134,6 +134,74 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  async function convertFromAppleMusic(trackId, originalUrl) {
+    statusDiv.textContent = '🔍 Fetching Apple Music track info...';
+
+    try {
+      // First try to get track info using multiple methods
+      const songInfo = await getAppleMusicTrackInfo(originalUrl, trackId);
+      
+      if (songInfo && songInfo.title && songInfo.title !== 'Unknown Track') {
+        statusDiv.textContent = `🎵 Found: "${songInfo.title}" by ${songInfo.artist}. Searching other platforms...`;
+
+        // Search for both Spotify and YouTube Music
+        const [spotifyResult, ytmResult] = await Promise.allSettled([
+          searchSpotify(`${songInfo.title} ${songInfo.artist}`),
+          searchYouTubeMusic(songInfo.title, songInfo.artist)
+        ]);
+
+        displayResults(songInfo.title, songInfo.artist, {
+          spotify: spotifyResult.status === 'fulfilled' ? spotifyResult.value : null,
+          youtube: ytmResult.status === 'fulfilled' ? ytmResult.value : null,
+          originalPlatform: 'apple'
+        });
+      } else {
+        // If we get here, it means getAppleMusicTrackInfo returned null or unknown track
+        throw new Error('Could not retrieve song information from Apple Music');
+      }
+    } catch (error) {
+      console.error('Apple Music conversion error:', error);
+      
+      // Check if it's a specific error or just a general failure
+      if (error.message.includes('Could not retrieve') || error.message.includes('Unknown Track')) {
+        // Try direct proxy call as fallback
+        statusDiv.textContent = '🔍 Trying alternative method...';
+        await tryDirectProxyCall(trackId, originalUrl);
+      } else {
+        statusDiv.textContent = '❌ Could not convert Apple Music link. Try a different song.';
+      }
+    }
+  }
+
+  async function tryDirectProxyCall(trackId, originalUrl) {
+    try {
+      // Call your proxy directly
+      const proxyResponse = await fetch(`${proxyUrl}/apple-track/${trackId}`);
+      
+      if (proxyResponse.ok) {
+        const trackData = await proxyResponse.json();
+        statusDiv.textContent = `🎵 Found: "${trackData.name}" by ${trackData.artist}. Searching other platforms...`;
+
+        // Search for both Spotify and YouTube Music
+        const [spotifyResult, ytmResult] = await Promise.allSettled([
+          searchSpotify(`${trackData.name} ${trackData.artist}`),
+          searchYouTubeMusic(trackData.name, trackData.artist)
+        ]);
+
+        displayResults(trackData.name, trackData.artist, {
+          spotify: spotifyResult.status === 'fulfilled' ? spotifyResult.value : null,
+          youtube: ytmResult.status === 'fulfilled' ? ytmResult.value : null,
+          originalPlatform: 'apple'
+        });
+      } else {
+        throw new Error('Direct proxy call also failed');
+      }
+    } catch (directError) {
+      console.error('Direct proxy call failed:', directError);
+      statusDiv.textContent = '❌ Could not convert Apple Music link. Try a different song.';
+    }
+  }
+
   function extractArtistFromTitle(title) {
     // Common patterns in YouTube Music titles:
     // "Artist - Song", "Song - Artist", "Artist: Song", "Song (feat. Artist)", etc.
@@ -181,51 +249,24 @@ document.addEventListener('DOMContentLoaded', () => {
     return { artist: null, cleanTitle: title };
   }
 
-  async function convertFromAppleMusic(trackId, originalUrl) {
-    statusDiv.textContent = '🔍 Fetching Apple Music track info...';
-
-    try {
-      // First try to get track info using multiple methods
-      const songInfo = await getAppleMusicTrackInfo(originalUrl, trackId);
-      
-      if (songInfo && songInfo.title && songInfo.title !== 'Unknown Track') {
-        statusDiv.textContent = `🎵 Found: "${songInfo.title}" by ${songInfo.artist}. Searching other platforms...`;
-
-        // Search for both Spotify and YouTube Music
-        const [spotifyResult, ytmResult] = await Promise.allSettled([
-          searchSpotify(`${songInfo.title} ${songInfo.artist}`),
-          searchYouTubeMusic(songInfo.title, songInfo.artist)
-        ]);
-
-        displayResults(songInfo.title, songInfo.artist, {
-          spotify: spotifyResult.status === 'fulfilled' ? spotifyResult.value : null,
-          youtube: ytmResult.status === 'fulfilled' ? ytmResult.value : null,
-          originalPlatform: 'apple'
-        });
-      } else {
-        throw new Error('Could not retrieve song information from Apple Music');
-      }
-    } catch (error) {
-      console.error('Apple Music conversion error:', error);
-      statusDiv.textContent = '❌ Could not convert Apple Music link. The proxy may not support Apple Music yet.';
-    }
-  }
-
   async function getAppleMusicTrackInfo(url, trackId) {
-    // Method 1: Try your proxy first
+    // Method 1: Try your proxy first (this should work based on your test)
     try {
       const amRes = await fetch(`${proxyUrl}/apple-track/${trackId}`);
       if (amRes.ok) {
         const trackInfo = await amRes.json();
+        console.log('Proxy returned:', trackInfo); // Debug log
         if (trackInfo.name && trackInfo.artist) {
           return {
             title: trackInfo.name,
             artist: trackInfo.artist
           };
         }
+      } else {
+        console.log('Proxy response not OK:', amRes.status);
       }
     } catch (error) {
-      console.log('Proxy Apple Music endpoint not available');
+      console.log('Proxy Apple Music endpoint error:', error);
     }
 
     // Method 2: Extract from URL and use iTunes API
@@ -278,9 +319,9 @@ document.addEventListener('DOMContentLoaded', () => {
       
       let songName = '';
       
-      // Look for 'song' in the path and get the next segment
+      // Look for 'song' or 'album' in the path
       for (let i = 0; i < pathSegments.length; i++) {
-        if (pathSegments[i] === 'song') {
+        if (pathSegments[i] === 'song' || pathSegments[i] === 'album') {
           if (i + 1 < pathSegments.length) {
             songName = pathSegments[i + 1];
             break;
