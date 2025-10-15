@@ -77,6 +77,14 @@ h1 {
   font-weight: 700;
 }
 
+.am {
+  background: linear-gradient(90deg, #000, #aaa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 700;
+}
+
 .subtitle {
   color: #bbb;
   margin-bottom: 28px;
