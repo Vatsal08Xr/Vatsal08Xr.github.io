@@ -18,10 +18,10 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Improved regex patterns
+    // Improved regex patterns - FIXED Apple Music regex
     const spotifyRegex = /https?:\/\/open\.spotify\.com\/track\/([a-zA-Z0-9]+)/;
     const ytRegex = /(?:https?:\/\/)?(?:music\.)?youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/;
-    const amRegex = /music\.apple\.com\/(?:[a-z]{2}\/)?(?:album|song)\/[^/]+\/(\d+)/;
+    const amRegex = /music\.apple\.com\/(?:[a-z]{2}\/)?(?:album|song)\/[^?]+\/(\d+)/;
 
     if (spotifyRegex.test(value)) {
       heading.innerHTML = 'Spotify → <span class="ytm">YouTube Music</span> or <span class="am">Apple Music</span>';
@@ -44,14 +44,19 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Improved regex patterns
+    // Improved regex patterns - FIXED Apple Music regex
     const spotifyRegex = /https?:\/\/open\.spotify\.com\/track\/([a-zA-Z0-9]+)/;
     const ytRegex = /(?:https?:\/\/)?(?:music\.)?youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/;
-    const amRegex = /music\.apple\.com\/(?:[a-z]{2}\/)?(?:album|song)\/[^/]+\/(\d+)/;
+    const amRegex = /music\.apple\.com\/(?:[a-z]{2}\/)?(?:album|song)\/[^?]+\/(\d+)/;
 
     const spotifyMatch = input.match(spotifyRegex);
     const ytMatch = input.match(ytRegex);
     const amMatch = input.match(amRegex);
+
+    console.log('Input:', input);
+    console.log('Spotify match:', spotifyMatch);
+    console.log('YouTube match:', ytMatch);
+    console.log('Apple Music match:', amMatch);
 
     try {
       if (spotifyMatch) {
@@ -87,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Search for both YouTube Music and Apple Music
     const [ytmResult, amResult] = await Promise.allSettled([
       searchYouTubeMusic(title, artist),
-      searchAppleMusicDirect(title, artist) // Use direct Apple Music search
+      searchAppleMusicDirect(title, artist)
     ]);
 
     displayResults(title, artist, {
@@ -140,11 +145,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Pattern 2: "Song - Artist"
-    match = title.match(/^([^-]+) - ([^-]+)$/);
-    if (match && title.includes(' - ')) {
+    if (title.includes(' - ')) {
       const parts = title.split(' - ');
       if (parts.length === 2) {
-        // Heuristic: artist is usually shorter or has specific patterns
         const part1 = parts[0].trim();
         const part2 = parts[1].trim();
         
@@ -291,25 +294,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Replace hyphens with spaces and capitalize
         songName = songName.replace(/-/g, ' ')
                           .replace(/\b\w/g, l => l.toUpperCase());
-      }
-      
-      // For common songs, we can hardcode the artist for better results
-      const knownSongs = {
-        'eyes closed': { title: 'Eyes Closed', artist: 'Ed Sheeran' },
-        'blank space': { title: 'Blank Space', artist: 'Taylor Swift' },
-        'blinding lights': { title: 'Blinding Lights', artist: 'The Weeknd' },
-        'flowers': { title: 'Flowers', artist: 'Miley Cyrus' },
-        'cruel summer': { title: 'Cruel Summer', artist: 'Taylor Swift' },
-        'save your tears': { title: 'Save Your Tears', artist: 'The Weeknd' },
-        'levitating': { title: 'Levitating', artist: 'Dua Lipa' },
-        'stay': { title: 'Stay', artist: 'The Kid LAROI, Justin Bieber' },
-        'good 4 u': { title: 'good 4 u', artist: 'Olivia Rodrigo' },
-        'drivers license': { title: 'drivers license', artist: 'Olivia Rodrigo' }
-      };
-      
-      const lowerSongName = songName.toLowerCase();
-      if (knownSongs[lowerSongName]) {
-        return knownSongs[lowerSongName];
       }
       
       return {
