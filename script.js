@@ -18,10 +18,10 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Regex patterns - improved Apple Music regex
+    // Improved regex patterns
     const spotifyRegex = /https?:\/\/open\.spotify\.com\/track\/([a-zA-Z0-9]+)/;
     const ytRegex = /(?:https?:\/\/)?(?:music\.)?youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/;
-    const amRegex = /music\.apple\.com\/[a-z]{2}\/(?:album|song)\/[^?]*\?i=([0-9]+)/;
+    const amRegex = /music\.apple\.com\/(?:[a-z]{2}\/)?(?:album|song)\/[^/]+\/(\d+)/;
 
     if (spotifyRegex.test(value)) {
       heading.innerHTML = 'Spotify → <span class="ytm">YouTube Music</span> or <span class="am">Apple Music</span>';
@@ -44,14 +44,19 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Improved regex patterns
+    // Improved regex patterns - fixed Apple Music regex
     const spotifyRegex = /https?:\/\/open\.spotify\.com\/track\/([a-zA-Z0-9]+)/;
     const ytRegex = /(?:https?:\/\/)?(?:music\.)?youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/;
-    const amRegex = /music\.apple\.com\/[a-z]{2}\/(?:album|song)\/[^?]*\?i=([0-9]+)/;
+    const amRegex = /music\.apple\.com\/(?:[a-z]{2}\/)?(?:album|song)\/[^/]+\/(\d+)/;
 
     const spotifyMatch = input.match(spotifyRegex);
     const ytMatch = input.match(ytRegex);
     const amMatch = input.match(amRegex);
+
+    console.log('Input:', input);
+    console.log('Spotify match:', spotifyMatch);
+    console.log('YouTube match:', ytMatch);
+    console.log('Apple Music match:', amMatch);
 
     try {
       if (spotifyMatch) {
@@ -92,7 +97,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     displayResults(title, artist, {
       youtube: ytmResult.status === 'fulfilled' ? ytmResult.value : null,
-      apple: amResult.status === 'fulfilled' ? amResult.value : null
+      apple: amResult.status === 'fulfilled' ? amResult.value : null,
+      originalPlatform: 'spotify'
     });
   }
 
@@ -118,36 +124,57 @@ document.addEventListener('DOMContentLoaded', () => {
     
     displayResults(title, artist, {
       spotify: spotifyData,
-      apple: amResult.status === 'fulfilled' ? amResult.value : null
+      apple: amResult.status === 'fulfilled' ? amResult.value : null,
+      originalPlatform: 'youtube'
     });
   }
 
   async function convertFromAppleMusic(trackId) {
     statusDiv.textContent = '🔍 Fetching Apple Music track...';
 
-    const amRes = await fetch(`${proxyUrl}/apple-track/${trackId}`);
-    if (!amRes.ok) {
-      const err = await amRes.json().catch(() => ({}));
-      throw new Error(err.error || 'Track not found on Apple Music');
-    }
-    
-    const { name, artist } = await amRes.json();
-    statusDiv.textContent = `🎵 Found: "${name}" by ${artist}. Searching other platforms...`;
+    // First try to get track info from your proxy
+    try {
+      const amRes = await fetch(`${proxyUrl}/apple-track/${trackId}`);
+      if (amRes.ok) {
+        const { name, artist } = await amRes.json();
+        statusDiv.textContent = `🎵 Found: "${name}" by ${artist}. Searching other platforms...`;
 
-    // Search for both Spotify and YouTube Music
+        // Search for both Spotify and YouTube Music
+        const [spotifyResult, ytmResult] = await Promise.allSettled([
+          searchSpotify(`${name} ${artist}`),
+          searchYouTubeMusic(name, artist)
+        ]);
+
+        displayResults(name, artist, {
+          spotify: spotifyResult.status === 'fulfilled' ? spotifyResult.value : null,
+          youtube: ytmResult.status === 'fulfilled' ? ytmResult.value : null,
+          originalPlatform: 'apple'
+        });
+        return;
+      }
+    } catch (error) {
+      console.log('Proxy Apple Music endpoint not available, falling back to search');
+    }
+
+    // Fallback: Since we don't have track info, use search-based approach
+    statusDiv.textContent = '🔍 Searching for Apple Music track on other platforms...';
+    
+    // Extract info from the URL for display
+    const searchQuery = inputEl.value.trim();
     const [spotifyResult, ytmResult] = await Promise.allSettled([
-      searchSpotify(`${name} ${artist}`),
-      searchYouTubeMusic(name, artist)
+      searchSpotifyFromApple(trackId),
+      searchYouTubeMusicFromApple(trackId)
     ]);
 
-    displayResults(name, artist, {
+    displayResults('Track', 'Artist', {
       spotify: spotifyResult.status === 'fulfilled' ? spotifyResult.value : null,
-      youtube: ytmResult.status === 'fulfilled' ? ytmResult.value : null
+      youtube: ytmResult.status === 'fulfilled' ? ytmResult.value : null,
+      originalPlatform: 'apple'
     });
   }
 
   async function searchYouTubeMusic(title, artist) {
-    const searchQuery = `${title} ${artist}`;
+    const searchQuery = `${title} ${artist} official audio`;
     const ytProxyRes = await fetch(`${proxyUrl}/search-youtube?q=${encodeURIComponent(searchQuery)}`);
     
     if (!ytProxyRes.ok) {
@@ -156,7 +183,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     const { videoId } = await ytProxyRes.json();
-    return `https://music.youtube.com/watch?v=${videoId}`;
+    return {
+      url: `https://music.youtube.com/watch?v=${videoId}`,
+      title: title,
+      artist: artist
+    };
   }
 
   async function searchSpotify(query) {
@@ -170,44 +201,102 @@ document.addEventListener('DOMContentLoaded', () => {
     return await spotifySearchRes.json();
   }
 
-  async function searchAppleMusic(title, artist) {
-    const searchQuery = `${title} ${artist}`;
-    const amSearchRes = await fetch(`${proxyUrl}/search-apple?q=${encodeURIComponent(searchQuery)}`);
+  async function searchSpotifyFromApple(trackId) {
+    // Fallback search for Apple Music tracks
+    const searchQuery = inputEl.value.split('/').pop() || 'music';
+    const spotifySearchRes = await fetch(`${proxyUrl}/search-spotify?q=${encodeURIComponent(searchQuery)}`);
     
-    if (!amSearchRes.ok) {
-      const err = await amSearchRes.json().catch(() => ({}));
-      throw new Error(err.error || 'No Apple Music match');
+    if (!spotifySearchRes.ok) {
+      const err = await spotifySearchRes.json().catch(() => ({}));
+      throw new Error(err.error || 'No Spotify match');
     }
     
-    const { url } = await amSearchRes.json();
-    return url;
+    return await spotifySearchRes.json();
+  }
+
+  async function searchYouTubeMusicFromApple(trackId) {
+    // Fallback search for Apple Music tracks
+    const searchQuery = inputEl.value.split('/').pop() || 'music';
+    const ytProxyRes = await fetch(`${proxyUrl}/search-youtube?q=${encodeURIComponent(searchQuery)}`);
+    
+    if (!ytProxyRes.ok) {
+      const err = await ytProxyRes.json().catch(() => ({}));
+      throw new Error(err.error || 'No YouTube match');
+    }
+    
+    const { videoId } = await ytProxyRes.json();
+    return {
+      url: `https://music.youtube.com/watch?v=${videoId}`,
+      title: 'Track',
+      artist: 'Artist'
+    };
+  }
+
+  async function searchAppleMusic(title, artist) {
+    const searchQuery = `${title} ${artist}`;
+    try {
+      const amSearchRes = await fetch(`${proxyUrl}/search-apple?q=${encodeURIComponent(searchQuery)}`);
+      
+      if (amSearchRes.ok) {
+        const { url } = await amSearchRes.json();
+        return {
+          url: url,
+          title: title,
+          artist: artist
+        };
+      }
+    } catch (error) {
+      console.log('Apple Music search not available');
+    }
+    return null;
   }
 
   async function searchAppleMusicFromTitle(title) {
-    const amSearchRes = await fetch(`${proxyUrl}/search-apple?q=${encodeURIComponent(title)}`);
-    
-    if (!amSearchRes.ok) {
-      const err = await amSearchRes.json().catch(() => ({}));
-      throw new Error(err.error || 'No Apple Music match');
+    try {
+      const amSearchRes = await fetch(`${proxyUrl}/search-apple?q=${encodeURIComponent(title)}`);
+      
+      if (amSearchRes.ok) {
+        const { url } = await amSearchRes.json();
+        return {
+          url: url,
+          title: title,
+          artist: 'Unknown Artist'
+        };
+      }
+    } catch (error) {
+      console.log('Apple Music search not available');
     }
-    
-    const { url } = await amSearchRes.json();
-    return url;
+    return null;
   }
 
   function displayResults(title, artist, platforms) {
     const links = [];
     
-    if (platforms.spotify) {
-      links.push(`<a href="${platforms.spotify.url}" target="_blank" rel="noopener">🎧 Open in Spotify</a>`);
+    // Only show platforms that aren't the original source
+    if (platforms.originalPlatform !== 'spotify' && platforms.spotify) {
+      links.push({
+        url: platforms.spotify.url,
+        text: '🎧 Open in Spotify',
+        platform: 'spotify'
+      });
     }
     
-    if (platforms.youtube) {
-      links.push(`<a href="${platforms.youtube}" target="_blank" rel="noopener">▶️ Open in YouTube Music</a>`);
+    if (platforms.originalPlatform !== 'youtube' && platforms.youtube) {
+      const ytData = platforms.youtube;
+      links.push({
+        url: ytData.url,
+        text: '▶️ Open in YouTube Music',
+        platform: 'youtube'
+      });
     }
     
-    if (platforms.apple) {
-      links.push(`<a href="${platforms.apple}" target="_blank" rel="noopener">🎵 Open in Apple Music</a>`);
+    if (platforms.originalPlatform !== 'apple' && platforms.apple) {
+      const amData = platforms.apple;
+      links.push({
+        url: amData.url,
+        text: '🎵 Open in Apple Music',
+        platform: 'apple'
+      });
     }
 
     if (links.length === 0) {
@@ -215,10 +304,14 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const linksHTML = links.map(link => 
+      `<a href="${link.url}" target="_blank" rel="noopener" class="${link.platform}-link">${link.text}</a>`
+    ).join('');
+
     resultDiv.innerHTML = `
       <p>✅ Found "${title}" by ${artist} on:</p>
       <div class="links">
-        ${links.join('')}
+        ${linksHTML}
       </div>
     `;
   }
