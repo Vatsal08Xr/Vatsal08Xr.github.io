@@ -105,23 +105,77 @@ document.addEventListener('DOMContentLoaded', () => {
       throw new Error('Could not get video info');
     }
     
-    const { title } = await videoInfoRes.json();
-    statusDiv.textContent = `🎵 Found: "${title}". Searching other platforms...`;
+    const videoInfo = await videoInfoRes.json();
+    const title = videoInfo.title;
+    
+    // Try to extract artist and song title from YouTube title
+    const { cleanTitle, artist } = extractArtistFromTitle(title);
+    
+    statusDiv.textContent = `🎵 Found: "${cleanTitle}"${artist ? ` by ${artist}` : ''}. Searching other platforms...`;
 
     // Search for both Spotify and Apple Music
     const [spotifyResult, amResult] = await Promise.allSettled([
-      searchSpotify(title),
-      searchAppleMusicFromTitle(title)
+      searchSpotify(artist ? `${cleanTitle} ${artist}` : cleanTitle),
+      searchAppleMusic(cleanTitle, artist || '')
     ]);
 
     const spotifyData = spotifyResult.status === 'fulfilled' ? spotifyResult.value : null;
-    const artist = spotifyData?.artist || 'Unknown Artist';
+    const finalArtist = artist || (spotifyData?.artist || 'Unknown Artist');
     
-    displayResults(title, artist, {
+    displayResults(cleanTitle, finalArtist, {
       spotify: spotifyData,
       apple: amResult.status === 'fulfilled' ? amResult.value : null,
       originalPlatform: 'youtube'
     });
+  }
+
+  function extractArtistFromTitle(title) {
+    // Common patterns in YouTube Music titles:
+    // "Artist - Song", "Song - Artist", "Artist: Song", "Song (feat. Artist)", etc.
+    
+    // Pattern 1: "Artist - Song"
+    let match = title.match(/^([^-]+) - ([^-]+)$/);
+    if (match) {
+      return { artist: match[1].trim(), cleanTitle: match[2].trim() };
+    }
+    
+    // Pattern 2: "Song - Artist"
+    match = title.match(/^([^-]+) - ([^-]+)$/);
+    if (match && title.includes(' - ')) {
+      const parts = title.split(' - ');
+      if (parts.length === 2) {
+        // Heuristic: artist is usually shorter or has specific patterns
+        const part1 = parts[0].trim();
+        const part2 = parts[1].trim();
+        
+        // If part2 contains "Official", "Video", etc., part1 is likely the song
+        if (part2.match(/(official|video|audio|lyrics|mv)/i)) {
+          return { artist: 'Unknown Artist', cleanTitle: part1 };
+        }
+        return { artist: part2, cleanTitle: part1 };
+      }
+    }
+    
+    // Pattern 3: "Artist: Song"
+    match = title.match(/^([^:]+): (.+)$/);
+    if (match) {
+      return { artist: match[1].trim(), cleanTitle: match[2].trim() };
+    }
+    
+    // Pattern 4: "Song (feat. Artist)"
+    match = title.match(/^([^(]+) \(feat\. ([^)]+)\)/i);
+    if (match) {
+      return { artist: match[2].trim(), cleanTitle: match[1].trim() };
+    }
+    
+    // Pattern 5: "Song (with Artist)"
+    match = title.match(/^([^(]+) \(with ([^)]+)\)/i);
+    if (match) {
+      return { artist: match[2].trim(), cleanTitle: match[1].trim() };
+    }
+    
+    // If no pattern matches, return the original title
+    return { artist: null, cleanTitle: title };
   }
 
   async function convertFromAppleMusic(trackId, originalUrl) {
@@ -273,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function searchYouTubeMusic(title, artist) {
     // Create a more specific search query
-    const searchQuery = `${title} ${artist} official audio`;
+    const searchQuery = artist ? `${title} ${artist} official audio` : `${title} official audio`;
     const ytProxyRes = await fetch(`${proxyUrl}/search-youtube?q=${encodeURIComponent(searchQuery)}`);
     
     if (!ytProxyRes.ok) {
@@ -285,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return {
       url: `https://music.youtube.com/watch?v=${videoId}`,
       title: title,
-      artist: artist
+      artist: artist || 'Unknown Artist'
     };
   }
 
@@ -301,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function searchAppleMusic(title, artist) {
-    const searchQuery = `${title} ${artist}`;
+    const searchQuery = artist ? `${title} ${artist}` : title;
     try {
       const amSearchRes = await fetch(`${proxyUrl}/search-apple?q=${encodeURIComponent(searchQuery)}`);
       
@@ -310,30 +364,31 @@ document.addEventListener('DOMContentLoaded', () => {
         return {
           url: url,
           title: title,
-          artist: artist
+          artist: artist || 'Unknown Artist'
         };
       }
     } catch (error) {
       console.log('Apple Music search not available');
     }
-    return null;
-  }
-
-  async function searchAppleMusicFromTitle(title) {
+    
+    // Fallback: Try iTunes API directly
     try {
-      const amSearchRes = await fetch(`${proxyUrl}/search-apple?q=${encodeURIComponent(title)}`);
-      
-      if (amSearchRes.ok) {
-        const { url } = await amSearchRes.json();
-        return {
-          url: url,
-          title: title,
-          artist: 'Unknown Artist'
-        };
+      const itunesResponse = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchQuery)}&entity=song&limit=1`);
+      if (itunesResponse.ok) {
+        const data = await itunesResponse.json();
+        if (data.results && data.results.length > 0) {
+          const track = data.results[0];
+          return {
+            url: track.trackViewUrl,
+            title: track.trackName,
+            artist: track.artistName
+          };
+        }
       }
     } catch (error) {
-      console.log('Apple Music search not available');
+      console.log('iTunes API fallback also failed');
     }
+    
     return null;
   }
 
