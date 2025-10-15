@@ -3,20 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Spoti2YTM • Convert Spotify ↔ YouTube Music</title>
-  <meta name="description" content="Free tool to convert between Spotify and YouTube Music links. No sign-up, no cost.">
+  <title>Spoti2YTM • Convert Spotify, YouTube Music & Apple Music</title>
+  <meta name="description" content="Free tool to convert song links between Spotify, YouTube Music, and Apple Music. No sign-up, no cost.">
   <link rel="stylesheet" href="style.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>↔️</text></svg>">
 </head>
 <body>
   <div class="container">
     <div class="card">
-      <!-- Neutral heading initially -->
-      <h1 id="heading">Spoti2YTM</h1>
-      <p class="subtitle">Paste a Spotify or YouTube Music song link. Get the other instantly.</p>
+      <h1 id="heading">Spotify → <span class="ytm">YouTube Music</span></h1>
+      <p class="subtitle">Paste any Spotify, YouTube Music, or Apple Music song link. Get the other two. Instantly.</p>
       
       <div class="input-group">
-        <input type="text" id="spotifyLink" placeholder="https://open.spotify.com/track/... or https://music.youtube.com/watch?v=..." autocomplete="off" />
+        <input type="text" id="spotifyLink" placeholder="https://open.spotify.com/track/... or https://music.youtube.com/watch?v=... or https://music.apple.com/.../song/..." autocomplete="off" />
         <button id="convertBtn">Convert Now</button>
       </div>
       
@@ -24,7 +23,7 @@
       <div id="result"></div>
 
       <footer>
-        <p>🔗 100% free • No data stored • Open source</p>
+        <p>↔️ 100% free • No data stored • Open source</p>
       </footer>
     </div>
   </div>
