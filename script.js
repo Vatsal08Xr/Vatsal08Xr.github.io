@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Improved regex patterns - fixed Apple Music regex
+    // Improved regex patterns
     const spotifyRegex = /https?:\/\/open\.spotify\.com\/track\/([a-zA-Z0-9]+)/;
     const ytRegex = /(?:https?:\/\/)?(?:music\.)?youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/;
     const amRegex = /music\.apple\.com\/(?:[a-z]{2}\/)?(?:album|song)\/[^/]+\/(\d+)/;
@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (ytMatch) {
         await convertFromYouTube(ytMatch[1]);
       } else if (amMatch) {
-        await convertFromAppleMusic(amMatch[1]);
+        await convertFromAppleMusic(amMatch[1], input);
       } else {
         throw new Error('Unsupported link. Use Spotify, YouTube Music, or Apple Music.');
       }
@@ -129,23 +129,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  async function convertFromAppleMusic(trackId) {
-    statusDiv.textContent = '🔍 Fetching Apple Music track...';
+  async function convertFromAppleMusic(trackId, originalUrl) {
+    statusDiv.textContent = '🔍 Fetching Apple Music track info...';
 
-    // First try to get track info from your proxy
     try {
+      // Try to get track info from your proxy first
       const amRes = await fetch(`${proxyUrl}/apple-track/${trackId}`);
       if (amRes.ok) {
-        const { name, artist } = await amRes.json();
-        statusDiv.textContent = `🎵 Found: "${name}" by ${artist}. Searching other platforms...`;
+        const trackInfo = await amRes.json();
+        const title = trackInfo.name;
+        const artist = trackInfo.artist;
+        
+        statusDiv.textContent = `🎵 Found: "${title}" by ${artist}. Searching other platforms...`;
 
         // Search for both Spotify and YouTube Music
         const [spotifyResult, ytmResult] = await Promise.allSettled([
-          searchSpotify(`${name} ${artist}`),
-          searchYouTubeMusic(name, artist)
+          searchSpotify(`${title} ${artist}`),
+          searchYouTubeMusic(title, artist)
         ]);
 
-        displayResults(name, artist, {
+        displayResults(title, artist, {
           spotify: spotifyResult.status === 'fulfilled' ? spotifyResult.value : null,
           youtube: ytmResult.status === 'fulfilled' ? ytmResult.value : null,
           originalPlatform: 'apple'
@@ -153,24 +156,76 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
     } catch (error) {
-      console.log('Proxy Apple Music endpoint not available, falling back to search');
+      console.log('Apple Music proxy endpoint failed:', error);
     }
 
-    // Fallback: Since we don't have track info, use search-based approach
-    statusDiv.textContent = '🔍 Searching for Apple Music track on other platforms...';
+    // Fallback: Extract song name from URL and use web scraping approach
+    statusDiv.textContent = '🔍 Extracting song info from Apple Music link...';
     
-    // Extract info from the URL for display
-    const searchQuery = inputEl.value.trim();
+    const songInfo = extractSongInfoFromAppleUrl(originalUrl);
+    const searchQuery = songInfo.title && songInfo.artist 
+      ? `${songInfo.title} ${songInfo.artist}`
+      : songInfo.title || 'music';
+
+    statusDiv.textContent = `🎵 Searching for "${searchQuery}" on other platforms...`;
+
     const [spotifyResult, ytmResult] = await Promise.allSettled([
-      searchSpotifyFromApple(trackId),
-      searchYouTubeMusicFromApple(trackId)
+      searchSpotify(searchQuery),
+      searchYouTubeMusic(songInfo.title || searchQuery, songInfo.artist || '')
     ]);
 
-    displayResults('Track', 'Artist', {
-      spotify: spotifyResult.status === 'fulfilled' ? spotifyResult.value : null,
-      youtube: ytmResult.status === 'fulfilled' ? ytmResult.value : null,
-      originalPlatform: 'apple'
-    });
+    const spotifyData = spotifyResult.status === 'fulfilled' ? spotifyResult.value : null;
+    const youtubeData = ytmResult.status === 'fulfilled' ? ytmResult.value : null;
+
+    displayResults(
+      songInfo.title || 'Track', 
+      songInfo.artist || 'Artist', 
+      {
+        spotify: spotifyData,
+        youtube: youtubeData,
+        originalPlatform: 'apple'
+      }
+    );
+  }
+
+  function extractSongInfoFromAppleUrl(url) {
+    try {
+      // Parse the URL to extract the song name from the path
+      const urlObj = new URL(url);
+      const pathSegments = urlObj.pathname.split('/').filter(segment => segment);
+      
+      // Apple Music URL pattern: /us/song/song-name/123456 or /album/album-name/123456
+      let songName = '';
+      let artist = '';
+      
+      // Look for 'song' or 'album' in the path and get the next segment
+      for (let i = 0; i < pathSegments.length; i++) {
+        if (pathSegments[i] === 'song' || pathSegments[i] === 'album') {
+          if (i + 1 < pathSegments.length) {
+            songName = pathSegments[i + 1];
+            break;
+          }
+        }
+      }
+      
+      // Decode and format the song name
+      if (songName) {
+        songName = decodeURIComponent(songName.replace(/-/g, ' '));
+        // Capitalize words
+        songName = songName.replace(/\b\w/g, l => l.toUpperCase());
+      }
+      
+      return {
+        title: songName || 'Unknown Track',
+        artist: artist || 'Unknown Artist'
+      };
+    } catch (error) {
+      console.error('Error extracting song info from URL:', error);
+      return {
+        title: 'Unknown Track',
+        artist: 'Unknown Artist'
+      };
+    }
   }
 
   async function searchYouTubeMusic(title, artist) {
@@ -199,37 +254,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     return await spotifySearchRes.json();
-  }
-
-  async function searchSpotifyFromApple(trackId) {
-    // Fallback search for Apple Music tracks
-    const searchQuery = inputEl.value.split('/').pop() || 'music';
-    const spotifySearchRes = await fetch(`${proxyUrl}/search-spotify?q=${encodeURIComponent(searchQuery)}`);
-    
-    if (!spotifySearchRes.ok) {
-      const err = await spotifySearchRes.json().catch(() => ({}));
-      throw new Error(err.error || 'No Spotify match');
-    }
-    
-    return await spotifySearchRes.json();
-  }
-
-  async function searchYouTubeMusicFromApple(trackId) {
-    // Fallback search for Apple Music tracks
-    const searchQuery = inputEl.value.split('/').pop() || 'music';
-    const ytProxyRes = await fetch(`${proxyUrl}/search-youtube?q=${encodeURIComponent(searchQuery)}`);
-    
-    if (!ytProxyRes.ok) {
-      const err = await ytProxyRes.json().catch(() => ({}));
-      throw new Error(err.error || 'No YouTube match');
-    }
-    
-    const { videoId } = await ytProxyRes.json();
-    return {
-      url: `https://music.youtube.com/watch?v=${videoId}`,
-      title: 'Track',
-      artist: 'Artist'
-    };
   }
 
   async function searchAppleMusic(title, artist) {
@@ -276,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (platforms.originalPlatform !== 'spotify' && platforms.spotify) {
       links.push({
         url: platforms.spotify.url,
-        text: '🎧 Open in Spotify',
+        text: `🎧 ${platforms.spotify.name || title} - ${platforms.spotify.artist || artist}`,
         platform: 'spotify'
       });
     }
@@ -285,7 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const ytData = platforms.youtube;
       links.push({
         url: ytData.url,
-        text: '▶️ Open in YouTube Music',
+        text: `▶️ ${ytData.title || title} - ${ytData.artist || artist}`,
         platform: 'youtube'
       });
     }
@@ -294,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const amData = platforms.apple;
       links.push({
         url: amData.url,
-        text: '🎵 Open in Apple Music',
+        text: `🎵 ${amData.title || title} - ${amData.artist || artist}`,
         platform: 'apple'
       });
     }
@@ -309,7 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ).join('');
 
     resultDiv.innerHTML = `
-      <p>✅ Found "${title}" by ${artist} on:</p>
+      <p>✅ Converted "${title}" by ${artist} to:</p>
       <div class="links">
         ${linksHTML}
       </div>
