@@ -1,90 +1,297 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Spoti2YTM • Convert Music Between Platforms</title>
-  <meta name="description" content="Free tool to convert songs and playlists between Spotify, YouTube Music, and Apple Music. No sign-up, no cost.">
-  <link rel="stylesheet" href="style.css" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>↔️</text></svg>">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spoti2YTM - Convert Music Between Platforms</title>
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        
+        /* Header styles */
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #1DB954, #FF0000);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .tagline {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+        
+        /* Button styles */
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+        
+        .btn-primary {
+            background-color: #1DB954;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-primary:hover {
+            background-color: #1ed760;
+        }
+        
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Convert section */
+        .convert-section {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Coming soon section */
+        .coming-soon {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 40px;
+        }
+        
+        h2 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        h3 {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+        }
+        
+        .feature-list {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .feature {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+        
+        .feature-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: #1DB954;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 3px;
+        }
+        
+        .feature-content h4 {
+            margin-bottom: 5px;
+            font-size: 1.1rem;
+        }
+        
+        .feature-content p {
+            opacity: 0.8;
+            font-size: 0.95rem;
+        }
+        
+        /* Notification form */
+        .notification-form {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .form-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        input[type="email"] {
+            flex: 1;
+            min-width: 250px;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 30px;
+            background-color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+        }
+        
+        .notify-btn {
+            padding: 12px 30px;
+            background-color: #FF0000;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .notify-btn:hover {
+            background-color: #ff3333;
+        }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .button-group {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            .form-group {
+                flex-direction: column;
+            }
+            
+            input[type="email"] {
+                min-width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="bg-elements">
-    <div class="bg-element"></div>
-    <div class="bg-element"></div>
-    <div class="bg-element"></div>
-    <div class="bg-element"></div>
-  </div>
-
-  <div class="container">
-    <div class="card">
-      <!-- Header with Tabs -->
-      <div class="app-header">
-        <h1 class="app-title">Spoti2YTM</h1>
-        <p class="app-subtitle">Convert music between platforms instantly</p>
+    <div class="container">
+        <header>
+            <h1>Spoti2YTM</h1>
+            <p class="tagline">Convert music between platforms instantly</p>
+            
+            <div class="button-group">
+                <button class="btn btn-primary">Single Song</button>
+                <button class="btn btn-secondary">Playlist</button>
+            </div>
+        </header>
         
-        <div class="tabs">
-          <button class="tab-button active" data-tab="song">🎵 Single Song</button>
-          <button class="tab-button" data-tab="playlist">📋 Playlist</button>
-        </div>
-      </div>
-
-      <!-- Song Conversion Tab -->
-      <div id="song-tab" class="tab-content active">
-        <div class="input-section">
-          <div class="input-group">
-            <input type="text" id="spotifyLink" placeholder="Paste Spotify, YouTube Music, or Apple Music link..." autocomplete="off" />
-            <button id="convertBtn" class="convert-button">
-              <span class="button-text">Convert Song</span>
-              <span class="button-loader" style="display: none;">⏳</span>
-            </button>
-          </div>
-        </div>
+        <section class="convert-section">
+            <p>Basic Spotify, YouTube Map - Convert Song</p>
+        </section>
         
-        <div id="status" class="status-message"></div>
-        <div id="result" class="result-section"></div>
-
-      <!-- Playlist Conversion Tab -->
-      <div id="playlist-tab" class="tab-content">
-        <div class="playlist-info">
-          <div class="feature-badge">Coming Soon</div>
-          <h2>Playlist Conversion</h2>
-          <p>Convert entire playlists between music platforms. We're working hard to bring you this feature!</p>
-          
-          <div class="playlist-features">
-            <div class="feature-card">
-              <div class="feature-icon">🔄</div>
-              <h4>Batch Conversion</h4>
-              <p>Convert entire playlists in one click</p>
+        <section class="coming-soon">
+            <h2>Coming Soon</h2>
+            <h3>Playlist Conversion</h3>
+            <p>Convert entire playlists between music platforms. We're working hard to bring you this feature!</p>
+            
+            <div class="feature-list">
+                <div class="feature">
+                    <div class="feature-icon"></div>
+                    <div class="feature-content">
+                        <h4>Batch Conversion</h4>
+                        <p>Convert entire playlists in one click</p>
+                    </div>
+                </div>
+                
+                <div class="feature">
+                    <div class="feature-icon"></div>
+                    <div class="feature-content">
+                        <h4>Fast Processing</h4>
+                        <p>Quick conversion for large playlists</p>
+                    </div>
+                </div>
+                
+                <div class="feature">
+                    <div class="feature-icon"></div>
+                    <div class="feature-content">
+                        <h4>Smart Matching</h4>
+                        <p>Accurate song matching across platforms</p>
+                    </div>
+                </div>
             </div>
-            <div class="feature-card">
-              <div class="feature-icon">⚡</div>
-              <h4>Fast Processing</h4>
-              <p>Quick conversion for large playlists</p>
+            
+            <div class="notification-form">
+                <h4>Get Notified When Playlist Conversion Launches</h4>
+                <div class="form-group">
+                    <input type="email" placeholder="Enter your email">
+                    <button class="notify-btn">Notify Me</button>
+                </div>
             </div>
-            <div class="feature-card">
-              <div class="feature-icon">🎯</div>
-              <h4>Smart Matching</h4>
-              <p>Accurate song matching across platforms</p>
-            </div>
-          </div>
-
-          <div class="newsletter-signup">
-            <h4>Get Notified When Playlist Conversion Launches</h4>
-            <div class="newsletter-form">
-              <input type="email" placeholder="Enter your email" class="newsletter-input" />
-              <button class="newsletter-button">Notify Me</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <footer>
-        <p>↔️ 100% free • No data stored • Open source</p>
-      </footer>
+        </section>
+        
+        <footer>
+            <p>100% free • No data stored • Open source</p>
+        </footer>
     </div>
-  </div>
-
-  <script src="script.js"></script>
 </body>
 </html>
