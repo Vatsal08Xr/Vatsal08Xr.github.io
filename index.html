@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Spoti2YTM • Convert Spotify, YouTube Music & Apple Music</title>
+  <meta name="description" content="Free tool to convert song links between Spotify, YouTube Music, and Apple Music. No sign-up, no cost.">
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>↔️</text></svg>">
+</head>
+<body>
+  <div class="bg-elements">
+  <div class="bg-element"></div>
+  <div class="bg-element"></div>
+  <div class="bg-element"></div>
+  <div class="bg-element"></div>
+</div>
+  <div class="container">
+    <div class="card">
+      <h1 id="heading">Spotify → <span class="ytm">YouTube Music</span></h1>
+      <p class="subtitle">Paste any Spotify, YouTube Music, or Apple Music song link. Get the other two. Instantly.</p>
+      
+      <div class="input-group">
+        <input type="text" id="spotifyLink" placeholder="https://open.spotify.com/track/... or https://music.youtube.com/watch?v=... or https://music.apple.com/.../song/..." autocomplete="off" />
+        <button id="convertBtn">Convert Now</button>
+      </div>
+      
+      <div id="status"></div>
+      <div id="result"></div>
+
+      <footer>
+        <p>↔️ 100% free • No data stored • Open source</p>
+      </footer>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
