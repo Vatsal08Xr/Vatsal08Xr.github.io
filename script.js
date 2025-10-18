@@ -1,50 +1,72 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const inputEl = document.getElementById('spotifyLink');
-  const convertBtn = document.getElementById('convertBtn');
-  const statusDiv = document.getElementById('status');
-  const resultDiv = document.getElementById('result');
-  const heading = document.getElementById('heading');
+  // Tab functionality
+  const tabButtons = document.querySelectorAll('.tab-button');
+  const tabContents = document.querySelectorAll('.tab-content');
+  
+  tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const tabName = button.getAttribute('data-tab');
+      
+      // Update active tab button
+      tabButtons.forEach(btn => btn.classList.remove('active'));
+      button.classList.add('active');
+      
+      // Update active tab content
+      tabContents.forEach(content => content.classList.remove('active'));
+      document.getElementById(`${tabName}-tab`).classList.add('active');
+      
+      // Update subtitle based on active tab
+      const subtitle = document.getElementById('subtitle');
+      if (tabName === 'song') {
+        subtitle.textContent = 'Paste any Spotify, YouTube Music, or Apple Music song link. Get the other two. Instantly.';
+      } else {
+        subtitle.textContent = 'Convert entire playlists between Spotify and YouTube Music. Coming soon!';
+      }
+    });
+  });
 
-  // Set default heading
-  heading.textContent = 'Spoti2YTM';
+  // Song conversion functionality
+  const songInput = document.getElementById('songLink');
+  const convertSongBtn = document.getElementById('convertSongBtn');
+  const songStatus = document.getElementById('songStatus');
+  const songResult = document.getElementById('songResult');
+  const heading = document.getElementById('heading');
 
   const proxyUrl = 'https://spotify-proxy-1.onrender.com';
 
-  // Update heading as user types
-  inputEl.addEventListener('input', () => {
-    const value = inputEl.value.trim();
+  // Update heading as user types in song input
+  songInput.addEventListener('input', () => {
+    const value = songInput.value.trim();
     if (!value) {
       heading.textContent = 'Spoti2YTM';
       return;
     }
 
-    // Improved regex patterns - FIXED Apple Music regex
     const spotifyRegex = /https?:\/\/open\.spotify\.com\/track\/([a-zA-Z0-9]+)/;
     const ytRegex = /(?:https?:\/\/)?(?:music\.)?youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/;
     const amRegex = /music\.apple\.com\/(?:[a-z]{2}\/)?(?:album|song)\/[^?]+\/(\d+)/;
 
     if (spotifyRegex.test(value)) {
-      heading.innerHTML = 'Spotify → <span class="ytm">YouTube Music</span> or <span class="am">Apple Music</span>';
+      heading.innerHTML = '<span class="spotify">Spotify</span> → <span class="youtube">YouTube Music</span> or <span class="apple">Apple Music</span>';
     } else if (ytRegex.test(value)) {
-      heading.innerHTML = '<span class="ytm">YouTube Music</span> → Spotify or <span class="am">Apple Music</span>';
+      heading.innerHTML = '<span class="youtube">YouTube Music</span> → <span class="spotify">Spotify</span> or <span class="apple">Apple Music</span>';
     } else if (amRegex.test(value)) {
-      heading.innerHTML = '<span class="am">Apple Music</span> → Spotify or <span class="ytm">YouTube Music</span>';
+      heading.innerHTML = '<span class="apple">Apple Music</span> → <span class="spotify">Spotify</span> or <span class="youtube">YouTube Music</span>';
     } else {
       heading.textContent = 'Spoti2YTM';
     }
   });
 
-  convertBtn.addEventListener('click', async () => {
-    const input = inputEl.value.trim();
-    statusDiv.textContent = '';
-    resultDiv.innerHTML = '';
+  convertSongBtn.addEventListener('click', async () => {
+    const input = songInput.value.trim();
+    songStatus.textContent = '';
+    songResult.innerHTML = '';
 
     if (!input) {
-      statusDiv.textContent = '❌ Please enter a Spotify, YouTube Music, or Apple Music link.';
+      songStatus.textContent = '❌ Please enter a Spotify, YouTube Music, or Apple Music link.';
       return;
     }
 
-    // Improved regex patterns - FIXED Apple Music regex
     const spotifyRegex = /https?:\/\/open\.spotify\.com\/track\/([a-zA-Z0-9]+)/;
     const ytRegex = /(?:https?:\/\/)?(?:music\.)?youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/;
     const amRegex = /music\.apple\.com\/(?:[a-z]{2}\/)?(?:album|song)\/[^?]+\/(\d+)/;
@@ -52,11 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const spotifyMatch = input.match(spotifyRegex);
     const ytMatch = input.match(ytRegex);
     const amMatch = input.match(amRegex);
-
-    console.log('Input:', input);
-    console.log('Spotify match:', spotifyMatch);
-    console.log('YouTube match:', ytMatch);
-    console.log('Apple Music match:', amMatch);
 
     try {
       if (spotifyMatch) {
@@ -70,12 +87,70 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (err) {
       console.error('Conversion error:', err);
-      statusDiv.textContent = `❌ ${err.message || 'Conversion failed. Try again.'}`;
+      songStatus.textContent = `❌ ${err.message || 'Conversion failed. Try again.'}`;
     }
   });
 
+  // Playlist conversion functionality
+  const playlistInput = document.getElementById('playlistLink');
+  const convertPlaylistBtn = document.getElementById('convertPlaylistBtn');
+  const playlistStatus = document.getElementById('playlistStatus');
+  const playlistResult = document.getElementById('playlistResult');
+
+  convertPlaylistBtn.addEventListener('click', async () => {
+    const input = playlistInput.value.trim();
+    playlistStatus.textContent = '';
+    playlistResult.innerHTML = '';
+
+    if (!input) {
+      playlistStatus.textContent = '❌ Please enter a Spotify or YouTube Music playlist link.';
+      return;
+    }
+
+    const spotifyPlaylistRegex = /https?:\/\/open\.spotify\.com\/playlist\/([a-zA-Z0-9]+)/;
+    const ytPlaylistRegex = /(?:https?:\/\/)?(?:music\.)?youtube\.com\/.*[?&]list=([a-zA-Z0-9_-]+)/;
+
+    const spotifyMatch = input.match(spotifyPlaylistRegex);
+    const ytMatch = input.match(ytPlaylistRegex);
+
+    if (spotifyMatch || ytMatch) {
+      // Simulate playlist conversion (to be implemented)
+      playlistStatus.textContent = '⏳ Playlist conversion is coming soon! Working on it...';
+      setTimeout(() => {
+        playlistResult.innerHTML = `
+          <p>🎉 Playlist conversion feature is under development!</p>
+          <div style="margin-top: 20px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+            <p style="margin-bottom: 10px;">Features being worked on:</p>
+            <ul style="text-align: left; color: var(--text-secondary);">
+              <li>Batch playlist conversion</li>
+              <li>Smart song matching across platforms</li>
+              <li>Playlist metadata preservation</li>
+              <li>Fast processing for large playlists</li>
+            </ul>
+          </div>
+        `;
+      }, 2000);
+    } else {
+      playlistStatus.textContent = '❌ Please enter a valid Spotify or YouTube Music playlist link.';
+    }
+  });
+
+  // Allow Enter key in both inputs
+  songInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      convertSongBtn.click();
+    }
+  });
+
+  playlistInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      convertPlaylistBtn.click();
+    }
+  });
+
+  // Existing conversion functions (keep your existing song conversion logic here)
   async function convertFromSpotify(trackId) {
-    statusDiv.textContent = '🔍 Fetching song info from Spotify...';
+    songStatus.textContent = '🔍 Fetching song info from Spotify...';
 
     const proxyRes = await fetch(`${proxyUrl}/track/${trackId}`);
     if (!proxyRes.ok) {
@@ -87,15 +162,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const title = track.name;
     const artist = track.artists[0].name;
     
-    statusDiv.textContent = `🎵 Found: "${title}" by ${artist}. Searching other platforms...`;
+    songStatus.textContent = `🎵 Found: "${title}" by ${artist}. Searching other platforms...`;
 
-    // Search for both YouTube Music and Apple Music
     const [ytmResult, amResult] = await Promise.allSettled([
       searchYouTubeMusic(title, artist),
       searchAppleMusicDirect(title, artist)
     ]);
 
-    displayResults(title, artist, {
+    displaySongResults(title, artist, {
       youtube: ytmResult.status === 'fulfilled' ? ytmResult.value : null,
       apple: amResult.status === 'fulfilled' ? amResult.value : null,
       originalPlatform: 'spotify'
@@ -103,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function convertFromYouTube(videoId) {
-    statusDiv.textContent = '🔍 Fetching video info from YouTube...';
+    songStatus.textContent = '🔍 Fetching video info from YouTube...';
 
     const videoInfoRes = await fetch(`${proxyUrl}/get-video-title?v=${videoId}`);
     if (!videoInfoRes.ok) {
@@ -113,12 +187,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const videoInfo = await videoInfoRes.json();
     const title = videoInfo.title;
     
-    // Try to extract artist and song title from YouTube title
     const { cleanTitle, artist } = extractArtistFromTitle(title);
     
-    statusDiv.textContent = `🎵 Found: "${cleanTitle}"${artist ? ` by ${artist}` : ''}. Searching other platforms...`;
+    songStatus.textContent = `🎵 Found: "${cleanTitle}"${artist ? ` by ${artist}` : ''}. Searching other platforms...`;
 
-    // Search for both Spotify and Apple Music
     const [spotifyResult, amResult] = await Promise.allSettled([
       searchSpotify(artist ? `${cleanTitle} ${artist}` : cleanTitle),
       searchAppleMusicDirect(cleanTitle, artist || '')
@@ -127,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const spotifyData = spotifyResult.status === 'fulfilled' ? spotifyResult.value : null;
     const finalArtist = artist || (spotifyData?.artist || 'Unknown Artist');
     
-    displayResults(cleanTitle, finalArtist, {
+    displaySongResults(cleanTitle, finalArtist, {
       spotify: spotifyData,
       apple: amResult.status === 'fulfilled' ? amResult.value : null,
       originalPlatform: 'youtube'
@@ -135,23 +207,18 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function extractArtistFromTitle(title) {
-    // Common patterns in YouTube Music titles:
-    // "Artist - Song", "Song - Artist", "Artist: Song", "Song (feat. Artist)", etc.
-    
-    // Pattern 1: "Artist - Song"
+    // Your existing extractArtistFromTitle function
     let match = title.match(/^([^-]+) - ([^-]+)$/);
     if (match) {
       return { artist: match[1].trim(), cleanTitle: match[2].trim() };
     }
     
-    // Pattern 2: "Song - Artist"
     if (title.includes(' - ')) {
       const parts = title.split(' - ');
       if (parts.length === 2) {
         const part1 = parts[0].trim();
         const part2 = parts[1].trim();
         
-        // If part2 contains "Official", "Video", etc., part1 is likely the song
         if (part2.match(/(official|video|audio|lyrics|mv)/i)) {
           return { artist: 'Unknown Artist', cleanTitle: part1 };
         }
@@ -159,45 +226,39 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     
-    // Pattern 3: "Artist: Song"
     match = title.match(/^([^:]+): (.+)$/);
     if (match) {
       return { artist: match[1].trim(), cleanTitle: match[2].trim() };
     }
     
-    // Pattern 4: "Song (feat. Artist)"
     match = title.match(/^([^(]+) \(feat\. ([^)]+)\)/i);
     if (match) {
       return { artist: match[2].trim(), cleanTitle: match[1].trim() };
     }
     
-    // Pattern 5: "Song (with Artist)"
     match = title.match(/^([^(]+) \(with ([^)]+)\)/i);
     if (match) {
       return { artist: match[2].trim(), cleanTitle: match[1].trim() };
     }
     
-    // If no pattern matches, return the original title
     return { artist: null, cleanTitle: title };
   }
 
   async function convertFromAppleMusic(trackId, originalUrl) {
-    statusDiv.textContent = '🔍 Fetching Apple Music track info...';
+    songStatus.textContent = '🔍 Fetching Apple Music track info...';
 
     try {
-      // First try to get track info using multiple methods
       const songInfo = await getAppleMusicTrackInfo(originalUrl, trackId);
       
       if (songInfo && songInfo.title && songInfo.title !== 'Unknown Track') {
-        statusDiv.textContent = `🎵 Found: "${songInfo.title}" by ${songInfo.artist}. Searching other platforms...`;
+        songStatus.textContent = `🎵 Found: "${songInfo.title}" by ${songInfo.artist}. Searching other platforms...`;
 
-        // Search for both Spotify and YouTube Music
         const [spotifyResult, ytmResult] = await Promise.allSettled([
           searchSpotify(`${songInfo.title} ${songInfo.artist}`),
           searchYouTubeMusic(songInfo.title, songInfo.artist)
         ]);
 
-        displayResults(songInfo.title, songInfo.artist, {
+        displaySongResults(songInfo.title, songInfo.artist, {
           spotify: spotifyResult.status === 'fulfilled' ? spotifyResult.value : null,
           youtube: ytmResult.status === 'fulfilled' ? ytmResult.value : null,
           originalPlatform: 'apple'
@@ -207,12 +268,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (error) {
       console.error('Apple Music conversion error:', error);
-      statusDiv.textContent = '❌ Could not convert Apple Music link. The proxy may not support Apple Music yet.';
+      songStatus.textContent = '❌ Could not convert Apple Music link. The proxy may not support Apple Music yet.';
     }
   }
 
   async function getAppleMusicTrackInfo(url, trackId) {
-    // Method 1: Try your proxy first
+    // Your existing getAppleMusicTrackInfo function
     try {
       const amRes = await fetch(`${proxyUrl}/apple-track/${trackId}`);
       if (amRes.ok) {
@@ -228,10 +289,8 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('Proxy Apple Music endpoint not available');
     }
 
-    // Method 2: Extract from URL and use iTunes API
     const urlInfo = extractSongInfoFromAppleUrl(url);
     if (urlInfo.title && urlInfo.title !== 'Unknown Track') {
-      // Try to get more accurate info using iTunes Search API
       try {
         const itunesResponse = await fetch(`https://itunes.apple.com/lookup?id=${trackId}`);
         if (itunesResponse.ok) {
@@ -251,7 +310,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return urlInfo;
     }
 
-    // Method 3: Final fallback - use iTunes search with the track ID
     try {
       const searchResponse = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(trackId)}&entity=song&limit=1`);
       if (searchResponse.ok) {
@@ -272,13 +330,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function extractSongInfoFromAppleUrl(url) {
+    // Your existing extractSongInfoFromAppleUrl function
     try {
       const urlObj = new URL(url);
       const pathSegments = urlObj.pathname.split('/').filter(segment => segment);
       
       let songName = '';
       
-      // Look for 'song' in the path and get the next segment
       for (let i = 0; i < pathSegments.length; i++) {
         if (pathSegments[i] === 'song') {
           if (i + 1 < pathSegments.length) {
@@ -288,10 +346,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
       
-      // Decode and format the song name
       if (songName) {
         songName = decodeURIComponent(songName);
-        // Replace hyphens with spaces and capitalize
         songName = songName.replace(/-/g, ' ')
                           .replace(/\b\w/g, l => l.toUpperCase());
       }
@@ -310,7 +366,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function searchYouTubeMusic(title, artist) {
-    // Create a more specific search query
     const searchQuery = artist ? `${title} ${artist} official audio` : `${title} official audio`;
     const ytProxyRes = await fetch(`${proxyUrl}/search-youtube?q=${encodeURIComponent(searchQuery)}`);
     
@@ -343,7 +398,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     console.log('Searching Apple Music for:', searchQuery);
     
-    // Method 1: Try your proxy first
     try {
       const amSearchRes = await fetch(`${proxyUrl}/search-apple?q=${encodeURIComponent(searchQuery)}`);
       if (amSearchRes.ok) {
@@ -361,7 +415,6 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('Proxy Apple Music search failed:', error);
     }
     
-    // Method 2: Use iTunes Search API directly (more reliable)
     try {
       const itunesResponse = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchQuery)}&entity=song&limit=1&media=music`);
       if (itunesResponse.ok) {
@@ -380,7 +433,6 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('iTunes API search failed:', error);
     }
     
-    // Method 3: Try with just the title if artist search failed
     if (artist) {
       try {
         const itunesResponse = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(title)}&entity=song&limit=1&media=music`);
@@ -405,14 +457,13 @@ document.addEventListener('DOMContentLoaded', () => {
     return null;
   }
 
-  function displayResults(title, artist, platforms) {
+  function displaySongResults(title, artist, platforms) {
     const links = [];
     
-    // Only show platforms that aren't the original source
     if (platforms.originalPlatform !== 'spotify' && platforms.spotify) {
       links.push({
         url: platforms.spotify.url,
-        text: `🎧 Open in Spotify`,
+        text: `<span class="platform-logo spotify-logo">Spotify</span>`,
         platform: 'spotify',
         songInfo: `${platforms.spotify.name || title} - ${platforms.spotify.artist || artist}`
       });
@@ -422,7 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const ytData = platforms.youtube;
       links.push({
         url: ytData.url,
-        text: `▶️ Open in YouTube Music`,
+        text: `<span class="platform-logo youtube-logo">YouTube Music</span>`,
         platform: 'youtube',
         songInfo: `${ytData.title || title} - ${ytData.artist || artist}`
       });
@@ -432,14 +483,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const amData = platforms.apple;
       links.push({
         url: amData.url,
-        text: `🎵 Open in Apple Music`,
+        text: `<span class="platform-logo apple-logo">Apple Music</span>`,
         platform: 'apple',
         songInfo: `${amData.title || title} - ${amData.artist || artist}`
       });
     }
 
     if (links.length === 0) {
-      resultDiv.innerHTML = '<p>❌ No alternative platforms found for this track.</p>';
+      songResult.innerHTML = '<p>❌ No alternative platforms found for this track.</p>';
       return;
     }
 
@@ -450,18 +501,11 @@ document.addEventListener('DOMContentLoaded', () => {
        </div>`
     ).join('');
 
-    resultDiv.innerHTML = `
+    songResult.innerHTML = `
       <p>✅ Converted "${title}" by ${artist} to:</p>
       <div class="links">
         ${linksHTML}
       </div>
     `;
   }
-
-  // Allow Enter key
-  inputEl.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      convertBtn.click();
-    }
-  });
 });
