@@ -1,4 +1,4 @@
-// Simple and working version of script.js
+// Clean version without app detection
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Script loaded successfully!');
     
@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const convertBtn = document.getElementById('convertBtn');
     const statusDiv = document.getElementById('status');
     const resultDiv = document.getElementById('result');
-    const appDetection = document.getElementById('appDetection');
     
     // Tab functionality
     const tabButtons = document.querySelectorAll('.tab-button');
@@ -85,9 +84,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function clearResults() {
         statusDiv.textContent = '';
         resultDiv.innerHTML = '';
-        if (appDetection) {
-            appDetection.style.display = 'none';
-        }
     }
     
     async function handleConvertClick() {
@@ -341,86 +337,5 @@ document.addEventListener('DOMContentLoaded', function() {
             <p>✅ Converted "${title}" by ${artist} to:</p>
             <div class="links">${linksHTML}</div>
         `;
-        
-        // Show app detection
-        showAppDetection({
-            title,
-            artist,
-            spotify: platforms.spotify,
-            youtube: platforms.youtube,
-            apple: platforms.apple
-        });
-    }
-    
-    function showAppDetection(songData) {
-        if (!appDetection) return;
-        
-        const availableApps = detectMusicApps();
-        let html = `
-            <div class="app-status">
-                <div style="margin-bottom: 15px;">
-                    <h4 style="margin-bottom: 10px; color: var(--text-secondary);">Available Apps:</h4>
-                    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-        `;
-        
-        if (availableApps.spotify) {
-            html += '<span class="app-badge available">✅ Spotify</span>';
-        } else {
-            html += '<span class="app-badge unavailable">❌ Spotify</span>';
-        }
-        
-        if (availableApps.youtube) {
-            html += '<span class="app-badge available">✅ YouTube Music</span>';
-        } else {
-            html += '<span class="app-badge unavailable">❌ YouTube Music</span>';
-        }
-        
-        if (availableApps.apple) {
-            html += '<span class="app-badge available">✅ Apple Music</span>';
-        } else {
-            html += '<span class="app-badge unavailable">❌ Apple Music</span>';
-        }
-        
-        html += `
-                    </div>
-                </div>
-                <div class="quick-launch">
-                    <h4>Quick Launch:</h4>
-                    <div class="quick-launch-buttons">
-        `;
-        
-        if (availableApps.spotify && songData.spotify) {
-            html += `<a href="${getAppDeepLink('spotify', songData.spotify.url)}" class="quick-launch-btn spotify">🎧 Open in Spotify</a>`;
-        }
-        
-        if (availableApps.youtube && songData.youtube) {
-            html += `<a href="${getAppDeepLink('youtube', songData.youtube.url)}" class="quick-launch-btn youtube">▶️ Open in YouTube Music</a>`;
-        }
-        
-        if (availableApps.apple && songData.apple) {
-            html += `<a href="${getAppDeepLink('apple', songData.apple.url)}" class="quick-launch-btn apple">🎵 Open in Apple Music</a>`;
-        }
-        
-        html += `
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        detectedApps.innerHTML = html;
-        appDetection.style.display = 'block';
-    }
-    
-    function detectMusicApps() {
-        return {
-            spotify: true,  // Assume available for demo
-            youtube: true,
-            apple: true
-        };
-    }
-    
-    function getAppDeepLink(platform, webUrl) {
-        // For now, just return web URLs
-        return webUrl;
     }
 });
