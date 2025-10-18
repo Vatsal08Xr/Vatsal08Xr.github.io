@@ -289,4 +289,72 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Proxy Apple Music search failed');
         }
         
-        // Fallback to
+        // Fallback to iTunes API
+        try {
+            const response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=1`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.results && data.results.length > 0) {
+                    const track = data.results[0];
+                    return {
+                        url: track.trackViewUrl,
+                        title: track.trackName || title,
+                        artist: track.artistName || artist
+                    };
+                }
+            }
+        } catch (error) {
+            console.log('iTunes API failed');
+        }
+        
+        return null;
+    }
+    
+    function showResults(title, artist, platforms) {
+        const links = [];
+        
+        if (platforms.originalPlatform !== 'spotify' && platforms.spotify) {
+            links.push({
+                url: platforms.spotify.url,
+                text: `${platformLogos.spotify} Open in Spotify`,
+                platform: 'spotify',
+                songInfo: `${platforms.spotify.name || title} - ${platforms.spotify.artist || artist}`
+            });
+        }
+        
+        if (platforms.originalPlatform !== 'youtube' && platforms.youtube) {
+            links.push({
+                url: platforms.youtube.url,
+                text: `${platformLogos.youtube} Open in YouTube Music`,
+                platform: 'youtube',
+                songInfo: `${platforms.youtube.title || title} - ${platforms.youtube.artist || artist}`
+            });
+        }
+        
+        if (platforms.originalPlatform !== 'apple' && platforms.apple) {
+            links.push({
+                url: platforms.apple.url,
+                text: `${platformLogos.apple} Open in Apple Music`,
+                platform: 'apple',
+                songInfo: `${platforms.apple.title || title} - ${platforms.apple.artist || artist}`
+            });
+        }
+        
+        if (links.length === 0) {
+            resultDiv.innerHTML = '<p>❌ No alternative platforms found.</p>';
+            return;
+        }
+        
+        const linksHTML = links.map(link => `
+            <div class="platform-link">
+                <a href="${link.url}" target="_blank" class="${link.platform}-link">${link.text}</a>
+                <div class="song-info">${link.songInfo}</div>
+            </div>
+        `).join('');
+        
+        resultDiv.innerHTML = `
+            <p>✅ Converted "${title}" by ${artist} to:</p>
+            <div class="links">${linksHTML}</div>
+        `;
+    }
+});
