@@ -1,3 +1,45 @@
+// Tab Management
+document.addEventListener('DOMContentLoaded', () => {
+  // Tab switching functionality
+  const tabButtons = document.querySelectorAll('.tab-button');
+  const tabContents = document.querySelectorAll('.tab-content');
+  
+  tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const tabId = button.getAttribute('data-tab');
+      
+      // Remove active class from all buttons and contents
+      tabButtons.forEach(btn => btn.classList.remove('active'));
+      tabContents.forEach(content => content.classList.remove('active'));
+      
+      // Add active class to clicked button and corresponding content
+      button.classList.add('active');
+      document.getElementById(`${tabId}-tab`).classList.add('active');
+      
+      // Clear results when switching tabs
+      if (tabId === 'song') {
+        document.getElementById('status').textContent = '';
+        document.getElementById('result').innerHTML = '';
+        document.getElementById('appDetection').style.display = 'none';
+      }
+    });
+  });
+
+  // Newsletter form (placeholder)
+  document.querySelector('.newsletter-button')?.addEventListener('click', () => {
+    const email = document.querySelector('.newsletter-input').value;
+    if (email && email.includes('@')) {
+      alert('Thanks! We\'ll notify you when playlist conversion launches.');
+      document.querySelector('.newsletter-input').value = '';
+    } else {
+      alert('Please enter a valid email address.');
+    }
+  });
+
+  // ... rest of your existing JavaScript code for song conversion
+  // (all your existing conversion functions remain the same)
+});
+
 document.addEventListener('DOMContentLoaded', () => {
   const inputEl = document.getElementById('spotifyLink');
   const convertBtn = document.getElementById('convertBtn');
