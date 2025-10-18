@@ -1,6 +1,20 @@
-// Tab Management
 document.addEventListener('DOMContentLoaded', () => {
-  // Tab switching functionality
+  // Initialize all variables and elements
+  const inputEl = document.getElementById('spotifyLink');
+  const convertBtn = document.getElementById('convertBtn');
+  const statusDiv = document.getElementById('status');
+  const resultDiv = document.getElementById('result');
+  const appDetection = document.getElementById('appDetection');
+  const detectedApps = document.getElementById('detectedApps');
+
+  // Set default heading
+  const heading = document.getElementById('heading');
+  heading.textContent = 'Spoti2YTM';
+
+  const proxyUrl = 'https://spotify-proxy-1.onrender.com';
+  let currentSongData = null;
+
+  // Tab Management
   const tabButtons = document.querySelectorAll('.tab-button');
   const tabContents = document.querySelectorAll('.tab-content');
   
@@ -16,41 +30,29 @@ document.addEventListener('DOMContentLoaded', () => {
       button.classList.add('active');
       document.getElementById(`${tabId}-tab`).classList.add('active');
       
-      // Clear results when switching tabs
+      // Clear results when switching to song tab
       if (tabId === 'song') {
-        document.getElementById('status').textContent = '';
-        document.getElementById('result').innerHTML = '';
-        document.getElementById('appDetection').style.display = 'none';
+        statusDiv.textContent = '';
+        resultDiv.innerHTML = '';
+        appDetection.style.display = 'none';
       }
     });
   });
 
-  // Newsletter form (placeholder)
-  document.querySelector('.newsletter-button')?.addEventListener('click', () => {
-    const email = document.querySelector('.newsletter-input').value;
-    if (email && email.includes('@')) {
-      alert('Thanks! We\'ll notify you when playlist conversion launches.');
-      document.querySelector('.newsletter-input').value = '';
-    } else {
-      alert('Please enter a valid email address.');
-    }
-  });
-
-  // ... rest of your existing JavaScript code for song conversion
-  // (all your existing conversion functions remain the same)
-});
-
-document.addEventListener('DOMContentLoaded', () => {
-  const inputEl = document.getElementById('spotifyLink');
-  const convertBtn = document.getElementById('convertBtn');
-  const statusDiv = document.getElementById('status');
-  const resultDiv = document.getElementById('result');
-  const heading = document.getElementById('heading');
-
-  // Set default heading
-  heading.textContent = 'Spoti2YTM';
-
-  const proxyUrl = 'https://spotify-proxy-1.onrender.com';
+  // Newsletter form
+  const newsletterButton = document.querySelector('.newsletter-button');
+  if (newsletterButton) {
+    newsletterButton.addEventListener('click', () => {
+      const emailInput = document.querySelector('.newsletter-input');
+      const email = emailInput.value;
+      if (email && email.includes('@')) {
+        alert('Thanks! We\'ll notify you when playlist conversion launches.');
+        emailInput.value = '';
+      } else {
+        alert('Please enter a valid email address.');
+      }
+    });
+  }
 
   // Update heading as user types
   inputEl.addEventListener('input', () => {
@@ -60,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Improved regex patterns - FIXED Apple Music regex
+    // Improved regex patterns
     const spotifyRegex = /https?:\/\/open\.spotify\.com\/track\/([a-zA-Z0-9]+)/;
     const ytRegex = /(?:https?:\/\/)?(?:music\.)?youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/;
     const amRegex = /music\.apple\.com\/(?:[a-z]{2}\/)?(?:album|song)\/[^?]+\/(\d+)/;
@@ -76,17 +78,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Convert button click handler
   convertBtn.addEventListener('click', async () => {
     const input = inputEl.value.trim();
     statusDiv.textContent = '';
     resultDiv.innerHTML = '';
+    appDetection.style.display = 'none';
+
+    // Show loading state
+    const buttonText = convertBtn.querySelector('.button-text');
+    const buttonLoader = convertBtn.querySelector('.button-loader');
+    buttonText.style.display = 'none';
+    buttonLoader.style.display = 'inline-block';
+    convertBtn.disabled = true;
 
     if (!input) {
       statusDiv.textContent = '❌ Please enter a Spotify, YouTube Music, or Apple Music link.';
+      // Reset button state
+      buttonText.style.display = 'inline-block';
+      buttonLoader.style.display = 'none';
+      convertBtn.disabled = false;
       return;
     }
 
-    // Improved regex patterns - FIXED Apple Music regex
+    // Improved regex patterns
     const spotifyRegex = /https?:\/\/open\.spotify\.com\/track\/([a-zA-Z0-9]+)/;
     const ytRegex = /(?:https?:\/\/)?(?:music\.)?youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/;
     const amRegex = /music\.apple\.com\/(?:[a-z]{2}\/)?(?:album|song)\/[^?]+\/(\d+)/;
@@ -94,11 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const spotifyMatch = input.match(spotifyRegex);
     const ytMatch = input.match(ytRegex);
     const amMatch = input.match(amRegex);
-
-    console.log('Input:', input);
-    console.log('Spotify match:', spotifyMatch);
-    console.log('YouTube match:', ytMatch);
-    console.log('Apple Music match:', amMatch);
 
     try {
       if (spotifyMatch) {
@@ -113,9 +123,22 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
       console.error('Conversion error:', err);
       statusDiv.textContent = `❌ ${err.message || 'Conversion failed. Try again.'}`;
+    } finally {
+      // Always reset button state
+      buttonText.style.display = 'inline-block';
+      buttonLoader.style.display = 'none';
+      convertBtn.disabled = false;
     }
   });
 
+  // Allow Enter key
+  inputEl.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      convertBtn.click();
+    }
+  });
+
+  // Conversion Functions
   async function convertFromSpotify(trackId) {
     statusDiv.textContent = '🔍 Fetching song info from Spotify...';
 
@@ -212,35 +235,6 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         statusDiv.textContent = '❌ Could not convert Apple Music link. Try a different song.';
       }
-    }
-  }
-
-  async function tryDirectProxyCall(trackId, originalUrl) {
-    try {
-      // Call your proxy directly
-      const proxyResponse = await fetch(`${proxyUrl}/apple-track/${trackId}`);
-      
-      if (proxyResponse.ok) {
-        const trackData = await proxyResponse.json();
-        statusDiv.textContent = `🎵 Found: "${trackData.name}" by ${trackData.artist}. Searching other platforms...`;
-
-        // Search for both Spotify and YouTube Music
-        const [spotifyResult, ytmResult] = await Promise.allSettled([
-          searchSpotify(`${trackData.name} ${trackData.artist}`),
-          searchYouTubeMusic(trackData.name, trackData.artist)
-        ]);
-
-        displayResults(trackData.name, trackData.artist, {
-          spotify: spotifyResult.status === 'fulfilled' ? spotifyResult.value : null,
-          youtube: ytmResult.status === 'fulfilled' ? ytmResult.value : null,
-          originalPlatform: 'apple'
-        });
-      } else {
-        throw new Error('Direct proxy call also failed');
-      }
-    } catch (directError) {
-      console.error('Direct proxy call failed:', directError);
-      statusDiv.textContent = '❌ Could not convert Apple Music link. Try a different song.';
     }
   }
 
@@ -488,6 +482,35 @@ document.addEventListener('DOMContentLoaded', () => {
     return null;
   }
 
+  async function tryDirectProxyCall(trackId, originalUrl) {
+    try {
+      // Call your proxy directly
+      const proxyResponse = await fetch(`${proxyUrl}/apple-track/${trackId}`);
+      
+      if (proxyResponse.ok) {
+        const trackData = await proxyResponse.json();
+        statusDiv.textContent = `🎵 Found: "${trackData.name}" by ${trackData.artist}. Searching other platforms...`;
+
+        // Search for both Spotify and YouTube Music
+        const [spotifyResult, ytmResult] = await Promise.allSettled([
+          searchSpotify(`${trackData.name} ${trackData.artist}`),
+          searchYouTubeMusic(trackData.name, trackData.artist)
+        ]);
+
+        displayResults(trackData.name, trackData.artist, {
+          spotify: spotifyResult.status === 'fulfilled' ? spotifyResult.value : null,
+          youtube: ytmResult.status === 'fulfilled' ? ytmResult.value : null,
+          originalPlatform: 'apple'
+        });
+      } else {
+        throw new Error('Direct proxy call also failed');
+      }
+    } catch (directError) {
+      console.error('Direct proxy call failed:', directError);
+      statusDiv.textContent = '❌ Could not convert Apple Music link. Try a different song.';
+    }
+  }
+
   function displayResults(title, artist, platforms) {
     const links = [];
     
@@ -539,12 +562,153 @@ document.addEventListener('DOMContentLoaded', () => {
         ${linksHTML}
       </div>
     `;
+
+    // Show app detection section
+    showAppDetection({
+      title,
+      artist,
+      spotify: platforms.spotify,
+      youtube: platforms.youtube,
+      apple: platforms.apple
+    });
   }
 
-  // Allow Enter key
-  inputEl.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      convertBtn.click();
+  // App Detection Functions
+  function detectMusicApps() {
+    const apps = {
+      spotify: false,
+      youtube: false,
+      apple: false
+    };
+
+    // Try to detect Spotify
+    try {
+      // Method 1: Check if Spotify app protocol is supported
+      const spotifyLink = document.createElement('a');
+      spotifyLink.href = 'spotify:';
+      apps.spotify = spotifyLink.protocol === 'spotify:';
+    } catch (e) {
+      // Method 2: Check user agent for mobile devices
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isMobile) {
+        // On mobile, we can't reliably detect, so assume all apps might be available
+        apps.spotify = true;
+        apps.youtube = true;
+        apps.apple = true;
+      }
     }
-  });
+
+    // Try to detect YouTube Music
+    try {
+      const ytLink = document.createElement('a');
+      ytLink.href = 'youtube:';
+      apps.youtube = ytLink.protocol === 'youtube:';
+    } catch (e) {
+      // Fallback for mobile
+      if (!apps.youtube && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        apps.youtube = true;
+      }
+    }
+
+    // Try to detect Apple Music
+    try {
+      const appleLink = document.createElement('a');
+      appleLink.href = 'music:';
+      apps.apple = appleLink.protocol === 'music:';
+    } catch (e) {
+      // Apple Music is primarily on iOS
+      if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        apps.apple = true;
+      }
+    }
+
+    console.log('Detected apps:', apps);
+    return apps;
+  }
+
+  function showAppDetection(songData) {
+    currentSongData = songData;
+    appDetection.style.display = 'block';
+    
+    const availableApps = detectMusicApps();
+    
+    let html = '<div class="app-status">';
+    
+    // Show app availability status
+    html += '<div style="margin-bottom: 15px;">';
+    html += '<h4 style="margin-bottom: 10px; color: var(--text-secondary);">Available Apps:</h4>';
+    html += '<div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">';
+    
+    if (availableApps.spotify) {
+      html += '<span class="app-badge available">✅ Spotify</span>';
+    } else {
+      html += '<span class="app-badge unavailable">❌ Spotify</span>';
+    }
+    
+    if (availableApps.youtube) {
+      html += '<span class="app-badge available">✅ YouTube Music</span>';
+    } else {
+      html += '<span class="app-badge unavailable">❌ YouTube Music</span>';
+    }
+    
+    if (availableApps.apple) {
+      html += '<span class="app-badge available">✅ Apple Music</span>';
+    } else {
+      html += '<span class="app-badge unavailable">❌ Apple Music</span>';
+    }
+    
+    html += '</div></div>';
+    
+    // Show quick launch buttons for available apps
+    html += '<div class="quick-launch">';
+    html += '<h4>Quick Launch:</h4>';
+    html += '<div class="quick-launch-buttons">';
+    
+    if (availableApps.spotify && songData.spotify) {
+      html += `<a href="${getAppDeepLink('spotify', songData.spotify.url)}" class="quick-launch-btn spotify">🎧 Open in Spotify</a>`;
+    }
+    
+    if (availableApps.youtube && songData.youtube) {
+      html += `<a href="${getAppDeepLink('youtube', songData.youtube.url)}" class="quick-launch-btn youtube">▶️ Open in YouTube Music</a>`;
+    }
+    
+    if (availableApps.apple && songData.apple) {
+      html += `<a href="${getAppDeepLink('apple', songData.apple.url)}" class="quick-launch-btn apple">🎵 Open in Apple Music</a>`;
+    }
+    
+    html += '</div></div>';
+    
+    detectedApps.innerHTML = html;
+  }
+
+  function getAppDeepLink(platform, webUrl) {
+    switch (platform) {
+      case 'spotify':
+        // Convert web URL to Spotify app deep link
+        const spotifyMatch = webUrl.match(/spotify\.com\/track\/([a-zA-Z0-9]+)/);
+        if (spotifyMatch) {
+          return `spotify:track:${spotifyMatch[1]}`;
+        }
+        return webUrl;
+        
+      case 'youtube':
+        // Convert web URL to YouTube app deep link
+        const ytMatch = webUrl.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
+        if (ytMatch) {
+          return `youtube://www.youtube.com/watch?v=${ytMatch[1]}`;
+        }
+        return webUrl;
+        
+      case 'apple':
+        // Convert web URL to Apple Music app deep link
+        const appleMatch = webUrl.match(/music\.apple\.com\/[^/]+\/album\/[^/]+\/(\d+)\?i=(\d+)/);
+        if (appleMatch) {
+          return `music://music.apple.com/us/album/track?i=${appleMatch[2]}`;
+        }
+        return webUrl;
+        
+      default:
+        return webUrl;
+    }
+  }
 });
