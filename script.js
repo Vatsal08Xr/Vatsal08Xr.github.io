@@ -113,6 +113,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         opacity: 1;
                     }
                 }
+                
+                @keyframes slideOutRight {
+                    from {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                    to {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                }
             </style>
         `;
         
@@ -166,20 +177,4 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('section').forEach(section => {
         observer.observe(section);
     });
-    
-    // Add slideOutRight animation for notifications
-    const slideOutStyle = document.createElement('style');
-    slideOutStyle.textContent = `
-        @keyframes slideOutRight {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-        }
-    `;
-    document.head.appendChild(slideOutStyle);
 });
