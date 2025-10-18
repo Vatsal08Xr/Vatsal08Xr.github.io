@@ -318,6 +318,38 @@ input:focus {
   text-align: center;
   color: #4fc3f7;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Platform Logos in Status */
+.platform-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.platform-logo.spotify {
+  background: var(--spotify-green);
+  color: black;
+}
+
+.platform-logo.youtube {
+  background: var(--youtube-red);
+  color: white;
+}
+
+.platform-logo.apple {
+  background: var(--apple-white);
+  color: black;
 }
 
 .result-section {
@@ -341,7 +373,10 @@ input:focus {
 }
 
 .platform-link a {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   padding: 18px 24px;
   border-radius: 16px;
   text-decoration: none;
@@ -385,6 +420,34 @@ input:focus {
 
 .platform-link a.apple-link:hover {
   box-shadow: 0 10px 30px rgba(255, 255, 255, 0.2);
+}
+
+/* Platform Icons */
+.platform-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.platform-icon.spotify {
+  background: var(--spotify-green);
+  color: black;
+}
+
+.platform-icon.youtube {
+  background: var(--youtube-red);
+  color: white;
+}
+
+.platform-icon.apple {
+  background: var(--apple-white);
+  color: black;
 }
 
 .song-info {
@@ -596,6 +659,11 @@ footer {
   
   .feature-card {
     padding: 20px 15px;
+  }
+  
+  .platform-link a {
+    padding: 16px 20px;
+    font-size: 15px;
   }
 }
 
