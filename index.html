@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Spoti2YTM • Convert Spotify, YouTube Music & Apple Music</title>
-  <meta name="description" content="Free tool to convert song links between Spotify, YouTube Music, and Apple Music. No sign-up, no cost.">
+  <title>Spoti2YTM • Convert Music Between Platforms</title>
+  <meta name="description" content="Free tool to convert songs and playlists between Spotify, YouTube Music, and Apple Music. No sign-up, no cost.">
   <link rel="stylesheet" href="style.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>↔️</text></svg>">
 </head>
@@ -15,50 +15,73 @@
     <div class="bg-element"></div>
     <div class="bg-element"></div>
   </div>
-  
+
   <div class="container">
     <div class="card">
-      <div class="tabs">
-        <button class="tab-button active" data-tab="song">Single Song</button>
-        <button class="tab-button" data-tab="playlist">Playlist</button>
+      <!-- Header with Tabs -->
+      <div class="app-header">
+        <h1 class="app-title">Spoti2YTM</h1>
+        <p class="app-subtitle">Convert music between platforms instantly</p>
+        
+        <div class="tabs">
+          <button class="tab-button active" data-tab="song">🎵 Single Song</button>
+          <button class="tab-button" data-tab="playlist">📋 Playlist</button>
+        </div>
       </div>
-      
-      <h1 id="heading">Spoti2YTM</h1>
-      <p class="subtitle" id="subtitle">Paste any Spotify, YouTube Music, or Apple Music song link. Get the other two. Instantly.</p>
-      
-      <!-- Song Tab Content -->
-      <div class="tab-content active" id="song-tab">
-        <div class="input-group">
-          <input type="text" id="songLink" placeholder="https://open.spotify.com/track/... or https://music.youtube.com/watch?v=... or https://music.apple.com/.../song/..." autocomplete="off" />
-          <button id="convertSongBtn">Convert Song</button>
+
+      <!-- Song Conversion Tab -->
+      <div id="song-tab" class="tab-content active">
+        <div class="input-section">
+          <div class="input-group">
+            <input type="text" id="spotifyLink" placeholder="Paste Spotify, YouTube Music, or Apple Music link..." autocomplete="off" />
+            <button id="convertBtn" class="convert-button">
+              <span class="button-text">Convert Song</span>
+              <span class="button-loader" style="display: none;">⏳</span>
+            </button>
+          </div>
         </div>
         
-        <div id="songStatus"></div>
-        <div id="songResult"></div>
-      </div>
-      
-      <!-- Playlist Tab Content -->
-      <div class="tab-content" id="playlist-tab">
-        <div class="input-group">
-          <input type="text" id="playlistLink" placeholder="https://open.spotify.com/playlist/... or https://music.youtube.com/playlist?list=..." autocomplete="off" />
-          <button id="convertPlaylistBtn">Convert Playlist</button>
+        <div id="status" class="status-message"></div>
+        <div id="result" class="result-section"></div>
+
+        <!-- App Detection -->
+        <div id="appDetection" class="app-detection">
+          <h3>🎵 Open in Your Apps</h3>
+          <div id="detectedApps" class="detected-apps"></div>
         </div>
-        
-        <div id="playlistStatus"></div>
-        <div id="playlistResult"></div>
-        
-        <div class="playlist-features">
-          <div class="feature">
-            <span class="feature-icon">⚡</span>
-            <span>Batch convert entire playlists</span>
+      </div>
+
+      <!-- Playlist Conversion Tab -->
+      <div id="playlist-tab" class="tab-content">
+        <div class="playlist-info">
+          <div class="feature-badge">Coming Soon</div>
+          <h2>Playlist Conversion</h2>
+          <p>Convert entire playlists between music platforms. We're working hard to bring you this feature!</p>
+          
+          <div class="playlist-features">
+            <div class="feature-card">
+              <div class="feature-icon">🔄</div>
+              <h4>Batch Conversion</h4>
+              <p>Convert entire playlists in one click</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">⚡</div>
+              <h4>Fast Processing</h4>
+              <p>Quick conversion for large playlists</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">🎯</div>
+              <h4>Smart Matching</h4>
+              <p>Accurate song matching across platforms</p>
+            </div>
           </div>
-          <div class="feature">
-            <span class="feature-icon">🎯</span>
-            <span>Smart song matching</span>
-          </div>
-          <div class="feature">
-            <span class="feature-icon">🚀</span>
-            <span>Fast processing</span>
+
+          <div class="newsletter-signup">
+            <h4>Get Notified When Playlist Conversion Launches</h4>
+            <div class="newsletter-form">
+              <input type="email" placeholder="Enter your email" class="newsletter-input" />
+              <button class="newsletter-button">Notify Me</button>
+            </div>
           </div>
         </div>
       </div>
