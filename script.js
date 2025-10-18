@@ -1,4 +1,4 @@
-// Clean version without app detection
+// Complete script.js with platform logos
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Script loaded successfully!');
     
@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         try {
-            statusDiv.textContent = '🔍 Processing your link...';
+            statusDiv.innerHTML = '🔍 Processing your link...';
             
             const spotifyRegex = /https?:\/\/open\.spotify\.com\/track\/([a-zA-Z0-9]+)/;
             const ytRegex = /(?:https?:\/\/)?(?:music\.)?youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/;
@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const proxyUrl = 'https://spotify-proxy-1.onrender.com';
     
     async function convertFromSpotify(trackId) {
-        statusDiv.textContent = '🔍 Fetching Spotify track...';
+        statusDiv.innerHTML = '<span class="platform-logo spotify">S</span> Fetching Spotify track...';
         
         const response = await fetch(`${proxyUrl}/track/${trackId}`);
         if (!response.ok) {
@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const title = track.name;
         const artist = track.artists[0].name;
         
-        statusDiv.textContent = `🎵 Found: "${title}" by ${artist}`;
+        statusDiv.innerHTML = `<span class="platform-logo spotify">S</span> Found: "${title}" by ${artist}`;
         
         // Search other platforms
         const [youtubeResult, appleResult] = await Promise.allSettled([
@@ -169,7 +169,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     async function convertFromYouTube(videoId) {
-        statusDiv.textContent = '🔍 Fetching YouTube video...';
+        statusDiv.innerHTML = '<span class="platform-logo youtube">YT</span> Fetching YouTube video...';
         
         const response = await fetch(`${proxyUrl}/get-video-title?v=${videoId}`);
         if (!response.ok) {
@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const data = await response.json();
         const title = data.title;
         
-        statusDiv.textContent = `🎵 Found: "${title}"`;
+        statusDiv.innerHTML = `<span class="platform-logo youtube">YT</span> Found: "${title}"`;
         
         // Search other platforms
         const [spotifyResult, appleResult] = await Promise.allSettled([
@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     async function convertFromAppleMusic(trackId, originalUrl) {
-        statusDiv.textContent = '🔍 Fetching Apple Music track...';
+        statusDiv.innerHTML = '<span class="platform-logo apple">AM</span> Fetching Apple Music track...';
         
         const response = await fetch(`${proxyUrl}/apple-track/${trackId}`);
         if (!response.ok) {
@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const title = track.name;
         const artist = track.artist;
         
-        statusDiv.textContent = `🎵 Found: "${title}" by ${artist}`;
+        statusDiv.innerHTML = `<span class="platform-logo apple">AM</span> Found: "${title}" by ${artist}`;
         
         // Search other platforms
         const [spotifyResult, youtubeResult] = await Promise.allSettled([
@@ -297,7 +297,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (platforms.originalPlatform !== 'spotify' && platforms.spotify) {
             links.push({
                 url: platforms.spotify.url,
-                text: '🎧 Open in Spotify',
+                text: '<span class="platform-icon spotify">S</span> Open in Spotify',
                 platform: 'spotify',
                 songInfo: `${platforms.spotify.name || title} - ${platforms.spotify.artist || artist}`
             });
@@ -306,7 +306,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (platforms.originalPlatform !== 'youtube' && platforms.youtube) {
             links.push({
                 url: platforms.youtube.url,
-                text: '▶️ Open in YouTube Music',
+                text: '<span class="platform-icon youtube">YT</span> Open in YouTube Music',
                 platform: 'youtube',
                 songInfo: `${platforms.youtube.title || title} - ${platforms.youtube.artist || artist}`
             });
@@ -315,7 +315,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (platforms.originalPlatform !== 'apple' && platforms.apple) {
             links.push({
                 url: platforms.apple.url,
-                text: '🎵 Open in Apple Music',
+                text: '<span class="platform-icon apple">AM</span> Open in Apple Music',
                 platform: 'apple',
                 songInfo: `${platforms.apple.title || title} - ${platforms.apple.artist || artist}`
             });
