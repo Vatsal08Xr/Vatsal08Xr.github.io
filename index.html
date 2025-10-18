@@ -10,23 +10,58 @@
 </head>
 <body>
   <div class="bg-elements">
-  <div class="bg-element"></div>
-  <div class="bg-element"></div>
-  <div class="bg-element"></div>
-  <div class="bg-element"></div>
-</div>
+    <div class="bg-element"></div>
+    <div class="bg-element"></div>
+    <div class="bg-element"></div>
+    <div class="bg-element"></div>
+  </div>
+  
   <div class="container">
     <div class="card">
-      <h1 id="heading">Spotify → <span class="ytm">YouTube Music</span></h1>
-      <p class="subtitle">Paste any Spotify, YouTube Music, or Apple Music song link. Get the other two. Instantly.</p>
-      
-      <div class="input-group">
-        <input type="text" id="spotifyLink" placeholder="https://open.spotify.com/track/... or https://music.youtube.com/watch?v=... or https://music.apple.com/.../song/..." autocomplete="off" />
-        <button id="convertBtn">Convert Now</button>
+      <div class="tabs">
+        <button class="tab-button active" data-tab="song">Single Song</button>
+        <button class="tab-button" data-tab="playlist">Playlist</button>
       </div>
       
-      <div id="status"></div>
-      <div id="result"></div>
+      <h1 id="heading">Spoti2YTM</h1>
+      <p class="subtitle" id="subtitle">Paste any Spotify, YouTube Music, or Apple Music song link. Get the other two. Instantly.</p>
+      
+      <!-- Song Tab Content -->
+      <div class="tab-content active" id="song-tab">
+        <div class="input-group">
+          <input type="text" id="songLink" placeholder="https://open.spotify.com/track/... or https://music.youtube.com/watch?v=... or https://music.apple.com/.../song/..." autocomplete="off" />
+          <button id="convertSongBtn">Convert Song</button>
+        </div>
+        
+        <div id="songStatus"></div>
+        <div id="songResult"></div>
+      </div>
+      
+      <!-- Playlist Tab Content -->
+      <div class="tab-content" id="playlist-tab">
+        <div class="input-group">
+          <input type="text" id="playlistLink" placeholder="https://open.spotify.com/playlist/... or https://music.youtube.com/playlist?list=..." autocomplete="off" />
+          <button id="convertPlaylistBtn">Convert Playlist</button>
+        </div>
+        
+        <div id="playlistStatus"></div>
+        <div id="playlistResult"></div>
+        
+        <div class="playlist-features">
+          <div class="feature">
+            <span class="feature-icon">⚡</span>
+            <span>Batch convert entire playlists</span>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">🎯</span>
+            <span>Smart song matching</span>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">🚀</span>
+            <span>Fast processing</span>
+          </div>
+        </div>
+      </div>
 
       <footer>
         <p>↔️ 100% free • No data stored • Open source</p>
