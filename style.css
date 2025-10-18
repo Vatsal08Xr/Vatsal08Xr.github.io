@@ -1,4 +1,4 @@
-/* Enhanced CSS with Tabs and Sleek Design */
+/* Reset and Variables */
 * {
   margin: 0;
   padding: 0;
@@ -10,19 +10,18 @@
   --youtube-red: #FF0000;
   --apple-white: #FFFFFF;
   --background-dark: #0a0a0a;
-  --card-bg: rgba(18, 18, 18, 0.92);
+  --card-bg: rgba(18, 18, 18, 0.95);
   --text-primary: #ffffff;
   --text-secondary: #b3b3b3;
   --text-tertiary: #888;
   --accent-purple: #8B5CF6;
   --accent-blue: #3B82F6;
-  --gradient-1: #1DB954;
-  --gradient-2: #FF0000;
-  --gradient-3: #FFFFFF;
   --border-radius: 20px;
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
 }
 
+/* Base Styles */
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: 
@@ -40,7 +39,7 @@ body {
   overflow-x: hidden;
 }
 
-/* Animated background elements */
+/* Animated Background */
 .bg-elements {
   position: fixed;
   top: 0;
@@ -110,6 +109,7 @@ body {
   }
 }
 
+/* Main Container */
 .container {
   width: 100%;
   max-width: 600px;
@@ -125,7 +125,7 @@ body {
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 
-    0 25px 50px rgba(0, 0, 0, 0.4),
+    var(--shadow),
     0 0 100px rgba(29, 185, 84, 0.08),
     0 0 150px rgba(255, 0, 0, 0.04),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -264,6 +264,7 @@ input:focus {
   transform: translateY(-2px);
 }
 
+/* Convert Button */
 .convert-button {
   background: linear-gradient(135deg, var(--spotify-green) 0%, #1ed760 100%);
   color: black;
@@ -295,6 +296,12 @@ input:focus {
   transform: translateY(-1px) scale(1.01);
 }
 
+.convert-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .button-loader {
   animation: spin 1s linear infinite;
 }
@@ -318,29 +325,77 @@ input:focus {
   animation: fadeInUp 0.5s ease;
 }
 
-/* App Detection */
-.app-detection {
-  display: none;
-  margin-top: 30px;
-  padding: 25px;
-  background: rgba(255, 255, 255, 0.03);
+/* Platform Links */
+.links {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.platform-link {
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.platform-link a {
+  display: block;
+  padding: 18px 24px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  animation: fadeInUp 0.5s ease;
-}
-
-.app-detection h3 {
-  margin-bottom: 20px;
-  color: var(--text-primary);
-  text-align: center;
+  text-decoration: none;
   font-weight: 600;
+  font-size: 16px;
+  transition: var(--transition);
+  border: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  position: relative;
+  overflow: hidden;
 }
 
-.detected-apps {
-  text-align: center;
+.platform-link a:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
-/* Playlist Tab Styles */
+.platform-link a.spotify-link {
+  background: linear-gradient(135deg, rgba(29, 185, 84, 0.15) 0%, rgba(29, 185, 84, 0.05) 100%);
+  border-color: rgba(29, 185, 84, 0.3);
+}
+
+.platform-link a.spotify-link:hover {
+  box-shadow: 0 10px 30px rgba(29, 185, 84, 0.2);
+}
+
+.platform-link a.youtube-link {
+  background: linear-gradient(135deg, rgba(255, 0, 0, 0.15) 0%, rgba(255, 0, 0, 0.05) 100%);
+  border-color: rgba(255, 0, 0, 0.3);
+}
+
+.platform-link a.youtube-link:hover {
+  box-shadow: 0 10px 30px rgba(255, 0, 0, 0.2);
+}
+
+.platform-link a.apple-link {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.platform-link a.apple-link:hover {
+  box-shadow: 0 10px 30px rgba(255, 255, 255, 0.2);
+}
+
+.song-info {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  font-weight: 500;
+  padding: 0 10px;
+}
+
+/* Playlist Tab */
 .playlist-info {
   text-align: center;
   padding: 20px 0;
@@ -410,6 +465,7 @@ input:focus {
   font-size: 0.9rem;
   color: var(--text-secondary);
   margin: 0;
+  line-height: 1.4;
 }
 
 .newsletter-signup {
@@ -440,6 +496,11 @@ input:focus {
   border-radius: 12px;
   color: var(--text-primary);
   font-size: 15px;
+  outline: none;
+}
+
+.newsletter-input:focus {
+  border-color: var(--accent-purple);
 }
 
 .newsletter-button {
@@ -451,76 +512,12 @@ input:focus {
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition);
+  white-space: nowrap;
 }
 
 .newsletter-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
-}
-
-/* Platform Links */
-.links {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  align-items: center;
-  margin-top: 20px;
-}
-
-.platform-link {
-  margin-bottom: 15px;
-  text-align: center;
-}
-
-.song-info {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin-top: 5px;
-  font-weight: 500;
-}
-
-.links a {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  padding: 18px 32px;
-  border-radius: 16px;
-  color: var(--text-primary);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 17px;
-  transition: var(--transition);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  width: 100%;
-  max-width: 320px;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-  margin-bottom: 5px;
-}
-
-.links a:hover {
-  transform: translateY(-3px);
-  border-color: rgba(255, 255, 255, 0.3);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-.links a[href*="youtube"] {
-  background: linear-gradient(135deg, rgba(255, 0, 0, 0.15) 0%, rgba(255, 0, 0, 0.05) 100%);
-  border-color: rgba(255, 0, 0, 0.3);
-}
-
-.links a[href*="spotify"] {
-  background: linear-gradient(135deg, rgba(29, 185, 84, 0.15) 0%, rgba(29, 185, 84, 0.05) 100%);
-  border-color: rgba(29, 185, 84, 0.3);
-}
-
-.links a[href*="apple"] {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
-  border-color: rgba(255, 255, 255, 0.3);
 }
 
 /* Footer */
@@ -565,6 +562,10 @@ footer {
   .newsletter-form {
     flex-direction: column;
   }
+  
+  .platform-link {
+    max-width: 100%;
+  }
 }
 
 @media (max-width: 480px) {
@@ -584,4 +585,46 @@ footer {
     flex-direction: column;
     gap: 8px;
   }
+  
+  .tab-button {
+    padding: 12px;
+  }
+  
+  .playlist-info h2 {
+    font-size: 1.8rem;
+  }
+  
+  .feature-card {
+    padding: 20px 15px;
+  }
+}
+
+/* Utility Classes */
+.text-center {
+  text-align: center;
+}
+
+.mb-20 {
+  margin-bottom: 20px;
+}
+
+.mt-20 {
+  margin-top: 20px;
+}
+
+.hidden {
+  display: none;
+}
+
+/* Platform Color Classes */
+.spotify {
+  color: var(--spotify-green);
+}
+
+.ytm {
+  color: var(--youtube-red);
+}
+
+.am {
+  color: var(--apple-white);
 }
