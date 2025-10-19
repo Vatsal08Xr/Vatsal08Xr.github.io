@@ -1,4 +1,4 @@
-// Complete script.js with improved version and remix detection
+// Complete script.js with exact version matching
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Script loaded successfully!');
     
@@ -174,7 +174,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         statusDiv.innerHTML = `${platformLogos.spotify} Found: "${title}" by ${artist}`;
         
-        // Search other platforms
+        // Search other platforms - preserve exact version
         const [youtubeResult, appleResult] = await Promise.allSettled([
             searchYouTubeMusic(title, artist),
             searchAppleMusic(title, artist)
@@ -198,12 +198,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const data = await response.json();
         const title = data.title;
         
-        // Improved artist extraction from YouTube title
+        // Extract artist from YouTube title
         const { cleanTitle, artist } = extractArtistFromTitle(title);
         
         statusDiv.innerHTML = `${platformLogos.youtube} Found: "${cleanTitle}"${artist ? ` by ${artist}` : ''}`;
         
-        // Search other platforms with better query
+        // Search other platforms with exact title
         const searchQuery = artist ? `${cleanTitle} ${artist}` : cleanTitle;
         
         const [spotifyResult, appleResult] = await Promise.allSettled([
@@ -221,66 +221,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Improved artist extraction function
+    // Simple artist extraction function
     function extractArtistFromTitle(title) {
-        // Remove common YouTube suffixes first
+        // Remove common YouTube suffixes
         let cleanTitle = title
             .replace(/\s*[-–—]\s*(?:topic|lyrics?|video|audio|official|music|mv|hd|4k|live|cover).*$/i, '')
             .replace(/\s*\([^)]*(?:official|lyrics?|video|audio|music|mv|hd|4k|live|cover)[^)]*\)/gi, '')
             .trim();
         
-        // Common patterns in YouTube titles - prioritize "Artist - Title" format
-        const patterns = [
-            // "Artist - Title" (most common)
-            /^([^-–—]+?)\s*[-–—]\s*([^-–—]+)$/,
-            // "Title - Artist"  
-            /^([^-–—]+)\s*[-–—]\s*([^-–—]+?)$/,
-            // "Artist: Title"
-            /^([^:]+):\s*(.+)$/,
-            // "Title (feat. Artist)"
-            /^([^(]+)\s*\(feat\.\s*([^)]+)\)/i,
-            // "Title (with Artist)"
-            /^([^(]+)\s*\(with\s*([^)]+)\)/i,
-            // "Title ft. Artist"
-            /^([^(]+)\s*ft\.\s*([^)]+)/i
-        ];
+        // Simple pattern: "Artist - Title"
+        const pattern = /^([^-–—]+?)\s*[-–—]\s*([^-–—]+)$/;
+        const match = cleanTitle.match(pattern);
         
-        for (const pattern of patterns) {
-            const match = cleanTitle.match(pattern);
-            if (match) {
-                const part1 = match[1].trim();
-                const part2 = match[2].trim();
-                
-                // Heuristic for "Artist - Title" vs "Title - Artist"
-                if (pattern.toString().includes('[-–—]')) {
-                    // For dash-separated patterns, assume first part is artist if it looks like an artist name
-                    const looksLikeArtist = (str) => {
-                        return !str.match(/(official|video|audio|lyrics?|mv|hd|4k|live|cover|clip)/i) &&
-                               str.split(/\s+/).length <= 4;
-                    };
-                    
-                    if (looksLikeArtist(part1) && !looksLikeArtist(part2)) {
-                        return { cleanTitle: part2, artist: part1 };
-                    } else if (looksLikeArtist(part2) && !looksLikeArtist(part1)) {
-                        return { cleanTitle: part1, artist: part2 };
-                    }
-                }
-                
-                // Default for other patterns
-                return { cleanTitle: part2, artist: part1 };
-            }
-        }
-        
-        // If no pattern matches, try to extract from parentheses
-        const parenMatch = cleanTitle.match(/^([^(]+)\s*\(([^)]+)\)$/);
-        if (parenMatch) {
-            const mainPart = parenMatch[1].trim();
-            const parenContent = parenMatch[2].trim();
-            
-            // If content in parentheses looks like an artist name
-            if (!parenContent.match(/(official|video|audio|lyrics?|mv|hd|4k|live|cover)/i)) {
-                return { cleanTitle: mainPart, artist: parenContent };
-            }
+        if (match) {
+            const part1 = match[1].trim();
+            const part2 = match[2].trim();
+            return { cleanTitle: part2, artist: part1 };
         }
         
         return { cleanTitle, artist: null };
@@ -314,36 +270,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     async function searchYouTubeMusic(title, artist) {
-        // Create more specific search queries
+        // Use exact title and artist for search
         let query;
         if (artist) {
-            query = `${title} ${artist} official audio`;
+            query = `${title} ${artist}`;
         } else {
-            // If no artist, try to find the most popular version
-            query = `${title} official audio`;
+            query = title;
         }
         
         const response = await fetch(`${proxyUrl}/search-youtube?q=${encodeURIComponent(query)}`);
         
         if (!response.ok) {
-            // Fallback to simpler search
-            const fallbackResponse = await fetch(`${proxyUrl}/search-youtube?q=${encodeURIComponent(title)}`);
-            if (!fallbackResponse.ok) {
-                throw new Error('YouTube Music not found');
-            }
-            const fallbackData = await fallbackResponse.json();
-            return {
-                url: `https://music.youtube.com/watch?v=${fallbackData.videoId}`,
-                title: title,
-                artist: artist
-            };
+            throw new Error('YouTube Music not found');
         }
         
         const data = await response.json();
         return {
             url: `https://music.youtube.com/watch?v=${data.videoId}`,
-            title: title,
-            artist: artist
+            title: data.title || title,
+            artist: data.artist || artist
         };
     }
     
@@ -363,105 +308,17 @@ document.addEventListener('DOMContentLoaded', function() {
             return null;
         }
 
-        // Clean and prepare search terms
-        const cleanTitle = title.toLowerCase().trim();
-        const cleanArtist = artist.toLowerCase().trim();
-        
-        console.log(`Searching Apple Music: "${cleanTitle}" by "${cleanArtist}"`);
+        // Use exact title and artist for search
+        const query = `${title} ${artist}`;
+        console.log(`Searching Apple Music: "${query}"`);
 
-        // Detect if this is a specific version (remix, orchestral, acoustic, etc.)
-        const versionInfo = detectVersionType(cleanTitle);
-        console.log(`Version detected: ${versionInfo.type} - "${versionInfo.baseTitle}"`);
-
-        // Strategy 1: Exact match with version information
-        if (versionInfo.type !== 'standard') {
-            const versionQuery = `${versionInfo.baseTitle} ${cleanArtist} ${versionInfo.type}`;
-            console.log(`Trying version-specific match: "${versionQuery}"`);
-            
-            const versionMatch = await tryAppleSearch(versionQuery, versionInfo.baseTitle, cleanArtist, true);
-            if (versionMatch) {
-                return versionMatch;
-            }
-        }
-
-        // Strategy 2: Exact match with both title and artist
-        const exactQuery = `${cleanTitle} ${cleanArtist}`;
-        console.log(`Trying exact match: "${exactQuery}"`);
-        
-        const exactMatch = await tryAppleSearch(exactQuery, cleanTitle, cleanArtist, false);
-        if (exactMatch) {
-            return exactMatch;
-        }
-
-        // Strategy 3: Try with base title (without version info)
-        if (versionInfo.type !== 'standard') {
-            const baseQuery = `${versionInfo.baseTitle} ${cleanArtist}`;
-            console.log(`Trying base title match: "${baseQuery}"`);
-            
-            const baseMatch = await tryAppleSearch(baseQuery, versionInfo.baseTitle, cleanArtist, false);
-            if (baseMatch) {
-                return baseMatch;
-            }
-        }
-
-        // Strategy 4: Try with just the main artist name (handle featured artists)
-        const mainArtist = cleanArtist.split(/[,&]|feat\.?|ft\.?/)[0].trim();
-        if (mainArtist !== cleanArtist) {
-            console.log(`Trying with main artist only: "${mainArtist}"`);
-            const mainArtistQuery = `${cleanTitle} ${mainArtist}`;
-            
-            const mainArtistMatch = await tryAppleSearch(mainArtistQuery, cleanTitle, mainArtist, false);
-            if (mainArtistMatch) {
-                return mainArtistMatch;
-            }
-        }
-
-        console.log('❌ No good Apple Music match found');
-        return null;
-    }
-
-    // Detect version type (remix, orchestral, acoustic, etc.)
-    function detectVersionType(title) {
-        const versionPatterns = [
-            { pattern: /\b(orchestral|orchestra)\b/i, type: 'orchestral' },
-            { pattern: /\b(acoustic)\b/i, type: 'acoustic' },
-            { pattern: /\b(remix)\b/i, type: 'remix' },
-            { pattern: /\b(live)\b/i, type: 'live' },
-            { pattern: /\b(studio)\b/i, type: 'studio' },
-            { pattern: /\b(original)\b/i, type: 'original' },
-            { pattern: /\b(radio edit|radio mix)\b/i, type: 'radio' },
-            { pattern: /\b(extended|extended mix)\b/i, type: 'extended' },
-            { pattern: /\b(instrumental)\b/i, type: 'instrumental' },
-            { pattern: /\b(demo)\b/i, type: 'demo' }
-        ];
-
-        for (const version of versionPatterns) {
-            if (version.pattern.test(title)) {
-                const baseTitle = title.replace(version.pattern, '').replace(/\s*[-\\(].*$/, '').trim();
-                return {
-                    type: version.type,
-                    baseTitle: baseTitle,
-                    fullTitle: title
-                };
-            }
-        }
-
-        return {
-            type: 'standard',
-            baseTitle: title,
-            fullTitle: title
-        };
-    }
-
-    async function tryAppleSearch(query, expectedTitle, expectedArtist, isVersionSearch) {
         try {
-            // Try iTunes API first
-            const itunesResponse = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=15&media=music`);
+            const itunesResponse = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=10&media=music`);
             if (itunesResponse.ok) {
                 const data = await itunesResponse.json();
                 if (data.results && data.results.length > 0) {
-                    // For version searches, be more strict about matching the specific version
-                    const bestMatch = findBestAppleMusicMatch(data.results, expectedTitle, expectedArtist, isVersionSearch);
+                    // Find the best match using exact title matching
+                    const bestMatch = findExactAppleMusicMatch(data.results, title, artist);
                     if (bestMatch) {
                         console.log(`✓ Apple Music match found: "${bestMatch.trackName}" by ${bestMatch.artistName}`);
                         return {
@@ -473,112 +330,72 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         } catch (error) {
-            console.log(`Apple search failed for: "${query}"`);
+            console.log('Apple Music search failed');
         }
+
+        console.log('❌ No good Apple Music match found');
         return null;
     }
 
-    // Enhanced matching function for Apple Music
-    function findBestAppleMusicMatch(results, targetTitle, targetArtist, isVersionSearch = false) {
-        console.log(`Looking for ${isVersionSearch ? 'version-specific' : 'standard'} match: "${targetTitle}" by "${targetArtist}"`);
+    // Exact matching function - preserves the same version
+    function findExactAppleMusicMatch(results, targetTitle, targetArtist) {
+        console.log(`Looking for exact match: "${targetTitle}" by "${targetArtist}"`);
         
         const scoredResults = results.map(track => {
-            const trackTitle = track.trackName.toLowerCase().trim();
-            const trackArtist = track.artistName.toLowerCase().trim();
+            const trackTitle = track.trackName;
+            const trackArtist = track.artistName;
             
             let score = 0;
             
-            // Title matching (most important)
-            if (trackTitle === targetTitle) {
-                score += 25; // Exact title match
-            } else if (trackTitle.includes(targetTitle) || targetTitle.includes(trackTitle)) {
-                score += 12; // Partial title match
+            // Exact title match is most important
+            if (trackTitle.toLowerCase() === targetTitle.toLowerCase()) {
+                score += 50; // Perfect title match
             } else {
-                // For version searches, check if this track matches the version type
-                if (isVersionSearch) {
-                    const trackVersion = detectVersionType(trackTitle);
-                    const targetVersion = detectVersionType(targetTitle);
-                    
-                    if (trackVersion.type === targetVersion.type) {
-                        score += 15; // Same version type
-                    } else if (trackVersion.baseTitle === targetVersion.baseTitle) {
-                        score += 8; // Same base title but different version
-                    } else {
-                        score -= 20; // Different base title - heavy penalty
-                    }
+                // Partial title match with penalty
+                const trackTitleLower = trackTitle.toLowerCase();
+                const targetTitleLower = targetTitle.toLowerCase();
+                
+                if (trackTitleLower.includes(targetTitleLower) || targetTitleLower.includes(trackTitleLower)) {
+                    score += 20; // Partial title match
                 } else {
-                    // Title doesn't match at all - heavy penalty
-                    score -= 15;
+                    score -= 30; // Title doesn't match well
                 }
             }
             
-            // Artist matching (very important)
-            if (trackArtist === targetArtist) {
-                score += 25; // Exact artist match
-            } else if (trackArtist.includes(targetArtist) || targetArtist.includes(trackArtist)) {
-                score += 18; // Partial artist match
+            // Exact artist match is very important
+            if (trackArtist.toLowerCase() === targetArtist.toLowerCase()) {
+                score += 40; // Perfect artist match
             } else {
-                // Check if it's the same artist with different formatting
-                const normalizeName = (name) => name.replace(/[^a-z0-9]/g, '');
-                if (normalizeName(trackArtist) === normalizeName(targetArtist)) {
-                    score += 20; // Same artist, different formatting
+                // Partial artist match with penalty
+                const trackArtistLower = trackArtist.toLowerCase();
+                const targetArtistLower = targetArtist.toLowerCase();
+                
+                if (trackArtistLower.includes(targetArtistLower) || targetArtistLower.includes(trackArtistLower)) {
+                    score += 15; // Partial artist match
                 } else {
-                    // Artist doesn't match - heavy penalty
-                    score -= 30;
+                    score -= 40; // Artist doesn't match well
                 }
             }
             
-            // Version-specific scoring
-            if (isVersionSearch) {
-                const trackVersion = detectVersionType(trackTitle);
-                const targetVersion = detectVersionType(targetTitle);
-                
-                // Bonus for exact version match
-                if (trackVersion.type === targetVersion.type) {
-                    score += 10;
-                }
-                
-                // Check if version keywords are present
-                const versionKeywords = ['orchestral', 'acoustic', 'remix', 'live', 'instrumental'];
-                const hasVersionKeyword = versionKeywords.some(keyword => 
-                    trackTitle.includes(keyword) === targetTitle.includes(keyword)
-                );
-                if (hasVersionKeyword) {
-                    score += 5;
-                }
-            }
-            
-            // Popularity factors (minor)
-            if (track.trackNumber === 1) {
-                score += 2; // Likely a single or popular track
-            }
-            
-            // Duration matching (helps identify correct versions)
-            if (track.trackTimeMillis) {
-                const trackDuration = Math.round(track.trackTimeMillis / 1000);
-                // Note: We don't have target duration, but this could be enhanced
-            }
+            // No version preference - we want whatever matches the original
             
             console.log(`  "${trackTitle}" by "${trackArtist}" - score: ${score}`);
             
             return { track, score };
         });
         
-        // Filter out negative scores and sort
-        const validResults = scoredResults.filter(item => item.score > 0);
-        validResults.sort((a, b) => b.score - a.score);
+        // Sort by score and return the best match
+        scoredResults.sort((a, b) => b.score - a.score);
         
-        const bestMatch = validResults[0];
+        const bestMatch = scoredResults[0];
         
-        // Higher threshold for version searches
-        const minimumScore = isVersionSearch ? 25 : 20;
-        
-        if (bestMatch && bestMatch.score >= minimumScore) {
-            console.log(`✓ Best match score: ${bestMatch.score} (minimum: ${minimumScore})`);
+        // Only return if we have a reasonably good match
+        if (bestMatch && bestMatch.score >= 30) {
+            console.log(`✓ Best match score: ${bestMatch.score}`);
             return bestMatch.track;
         }
         
-        console.log(`✗ No match met minimum score threshold of ${minimumScore}`);
+        console.log('✗ No good match found');
         return null;
     }
     
