@@ -174,7 +174,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         statusDiv.innerHTML = `${platformLogos.spotify} Found: "${title}" by ${artist}`;
         
-        // Search other platforms - preserve exact version
+        // Search other platforms
         const [youtubeResult, appleResult] = await Promise.allSettled([
             searchYouTubeMusic(title, artist),
             searchAppleMusic(title, artist)
@@ -337,65 +337,89 @@ document.addEventListener('DOMContentLoaded', function() {
         return null;
     }
 
-    // Exact matching function - preserves the same version
+    // Exact matching function with improved version detection
     function findExactAppleMusicMatch(results, targetTitle, targetArtist) {
         console.log(`Looking for exact match: "${targetTitle}" by "${targetArtist}"`);
+        
+        const normalize = (str) => str.toLowerCase().trim();
+        const targetTitleNorm = normalize(targetTitle);
+        const targetArtistNorm = normalize(targetArtist);
+        
+        // Words that indicate different versions (should be avoided)
+        const versionIndicators = [
+            'remix', 'remaster', 'acoustic', 'live', 'demo', 'instrumental',
+            'radio edit', 'extended', 'orchestral', 'cover', 'version',
+            'karaoke', 'tribute', 'unplugged', 'stripped', 'deluxe'
+        ];
         
         const scoredResults = results.map(track => {
             const trackTitle = track.trackName;
             const trackArtist = track.artistName;
+            const trackTitleNorm = normalize(trackTitle);
+            const trackArtistNorm = normalize(trackArtist);
             
             let score = 0;
             
-            // Exact title match is most important
-            if (trackTitle.toLowerCase() === targetTitle.toLowerCase()) {
-                score += 50; // Perfect title match
+            // CRITICAL: Exact title match gets highest priority
+            if (trackTitleNorm === targetTitleNorm) {
+                score += 100; // Perfect exact match
             } else {
-                // Partial title match with penalty
-                const trackTitleLower = trackTitle.toLowerCase();
-                const targetTitleLower = targetTitle.toLowerCase();
+                // Check if title contains version indicators
+                const hasVersionIndicator = versionIndicators.some(indicator => 
+                    trackTitleNorm.includes(indicator) && !targetTitleNorm.includes(indicator)
+                );
                 
-                if (trackTitleLower.includes(targetTitleLower) || targetTitleLower.includes(trackTitleLower)) {
-                    score += 20; // Partial title match
+                if (hasVersionIndicator) {
+                    score -= 50; // Heavy penalty for different versions
+                    console.log(`  "${trackTitle}" - Version mismatch detected`);
+                }
+                
+                // Check if target title is contained in track title
+                if (trackTitleNorm.includes(targetTitleNorm)) {
+                    score += 30; // Partial match (but much less than exact)
+                } else if (targetTitleNorm.includes(trackTitleNorm)) {
+                    score += 25;
                 } else {
-                    score -= 30; // Title doesn't match well
+                    score -= 40; // No title match
                 }
             }
             
-            // Exact artist match is very important
-            if (trackArtist.toLowerCase() === targetArtist.toLowerCase()) {
-                score += 40; // Perfect artist match
+            // Exact artist match is also very important
+            if (trackArtistNorm === targetArtistNorm) {
+                score += 50; // Perfect artist match
             } else {
-                // Partial artist match with penalty
-                const trackArtistLower = trackArtist.toLowerCase();
-                const targetArtistLower = targetArtist.toLowerCase();
-                
-                if (trackArtistLower.includes(targetArtistLower) || targetArtistLower.includes(trackArtistLower)) {
-                    score += 15; // Partial artist match
+                // Check for partial artist match
+                if (trackArtistNorm.includes(targetArtistNorm) || targetArtistNorm.includes(trackArtistNorm)) {
+                    score += 20; // Partial artist match
                 } else {
-                    score -= 40; // Artist doesn't match well
+                    score -= 50; // Wrong artist
                 }
             }
             
-            // No version preference - we want whatever matches the original
+            // Bonus: Prefer tracks without extra parenthetical info when target doesn't have it
+            const hasParentheses = /\([^)]+\)/.test(trackTitle);
+            const targetHasParentheses = /\([^)]+\)/.test(targetTitle);
+            if (hasParentheses && !targetHasParentheses) {
+                score -= 10; // Small penalty for extra info
+            }
             
             console.log(`  "${trackTitle}" by "${trackArtist}" - score: ${score}`);
             
             return { track, score };
         });
         
-        // Sort by score and return the best match
+        // Sort by score (highest first)
         scoredResults.sort((a, b) => b.score - a.score);
         
         const bestMatch = scoredResults[0];
         
-        // Only return if we have a reasonably good match
-        if (bestMatch && bestMatch.score >= 30) {
+        // Only return if we have a good match (raised threshold)
+        if (bestMatch && bestMatch.score >= 70) {
             console.log(`✓ Best match score: ${bestMatch.score}`);
             return bestMatch.track;
         }
         
-        console.log('✗ No good match found');
+        console.log('✗ No good match found (score too low)');
         return null;
     }
     
