@@ -1,4 +1,4 @@
-// Complete script.js with exact version matching
+// Complete script.js with improved Apple Music search
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Script loaded successfully!');
     
@@ -313,7 +313,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`Searching Apple Music: "${query}"`);
 
         try {
-            const itunesResponse = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=10&media=music`);
+            const itunesResponse = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=15&media=music`);
             if (itunesResponse.ok) {
                 const data = await itunesResponse.json();
                 if (data.results && data.results.length > 0) {
@@ -330,14 +330,67 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         } catch (error) {
-            console.log('Apple Music search failed');
+            console.log('Apple Music search failed:', error);
         }
 
-        console.log('❌ No good Apple Music match found');
+        // Fallback 1: Try with just the main artist (remove featured artists)
+        const mainArtist = artist.split(/[,&]|feat\.?|ft\.?/)[0].trim();
+        if (mainArtist !== artist) {
+            console.log(`Trying fallback with main artist only: "${mainArtist}"`);
+            const fallbackQuery = `${title} ${mainArtist}`;
+            
+            try {
+                const fallbackResponse = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(fallbackQuery)}&entity=song&limit=10&media=music`);
+                if (fallbackResponse.ok) {
+                    const data = await fallbackResponse.json();
+                    if (data.results && data.results.length > 0) {
+                        const bestMatch = findExactAppleMusicMatch(data.results, title, mainArtist);
+                        if (bestMatch) {
+                            console.log(`✓ Fallback Apple Music match found: "${bestMatch.trackName}" by ${bestMatch.artistName}`);
+                            return {
+                                url: bestMatch.trackViewUrl,
+                                title: bestMatch.trackName,
+                                artist: bestMatch.artistName
+                            };
+                        }
+                    }
+                }
+            } catch (error) {
+                console.log('Fallback search failed');
+            }
+        }
+
+        // Fallback 2: Try with just the title (no artist)
+        console.log('Trying fallback with title only');
+        try {
+            const titleOnlyResponse = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(title)}&entity=song&limit=10&media=music`);
+            if (titleOnlyResponse.ok) {
+                const data = await titleOnlyResponse.json();
+                if (data.results && data.results.length > 0) {
+                    // Find any match by this artist
+                    const artistMatch = data.results.find(track => 
+                        track.artistName.toLowerCase().includes(artist.toLowerCase()) ||
+                        artist.toLowerCase().includes(track.artistName.toLowerCase())
+                    );
+                    if (artistMatch) {
+                        console.log(`✓ Title-only fallback match found: "${artistMatch.trackName}" by ${artistMatch.artistName}`);
+                        return {
+                            url: artistMatch.trackViewUrl,
+                            title: artistMatch.trackName,
+                            artist: artistMatch.artistName
+                        };
+                    }
+                }
+            }
+        } catch (error) {
+            console.log('Title-only fallback failed');
+        }
+
+        console.log('❌ No Apple Music match found after all fallbacks');
         return null;
     }
 
-    // Exact matching function - preserves the same version
+    // Updated matching function with lower threshold
     function findExactAppleMusicMatch(results, targetTitle, targetArtist) {
         console.log(`Looking for exact match: "${targetTitle}" by "${targetArtist}"`);
         
@@ -358,7 +411,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (trackTitleLower.includes(targetTitleLower) || targetTitleLower.includes(trackTitleLower)) {
                     score += 20; // Partial title match
                 } else {
-                    score -= 30; // Title doesn't match well
+                    score -= 10; // Reduced penalty for title mismatch
                 }
             }
             
@@ -373,11 +426,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (trackArtistLower.includes(targetArtistLower) || targetArtistLower.includes(trackArtistLower)) {
                     score += 15; // Partial artist match
                 } else {
-                    score -= 40; // Artist doesn't match well
+                    score -= 20; // Reduced penalty for artist mismatch
                 }
             }
-            
-            // No version preference - we want whatever matches the original
             
             console.log(`  "${trackTitle}" by "${trackArtist}" - score: ${score}`);
             
@@ -389,8 +440,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const bestMatch = scoredResults[0];
         
-        // Only return if we have a reasonably good match
-        if (bestMatch && bestMatch.score >= 30) {
+        // Lower threshold to 20 to catch more matches
+        if (bestMatch && bestMatch.score >= 20) {
             console.log(`✓ Best match score: ${bestMatch.score}`);
             return bestMatch.track;
         }
