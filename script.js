@@ -187,15 +187,21 @@ document.addEventListener('DOMContentLoaded', function() {
     function extractArtistFromTitle(title) {
         console.log('YouTube Title:', title);
         
-        // Simple pattern: "Artist - Title"
-        const pattern = /^([^-–—]+?)\s*[-–—]\s*([^-–—]+)/;
-        const match = title.match(pattern);
+        // Pattern for Japanese titles: "Artist - Title" or "Artist ― Title"
+        const patterns = [
+            /^([^-–—―]+?)\s*[-–—]\s*([^-–—―]+)/, // Standard dash
+            /^([^-–—―]+?)\s*[―]\s*([^-–—―]+)/, // Japanese long dash
+            /^([^-–—―]+?)\s*[～]\s*([^-–—―]+)/, // Japanese wave dash
+        ];
         
-        if (match) {
-            return {
-                cleanTitle: match[2].trim(),
-                artist: match[1].trim()
-            };
+        for (const pattern of patterns) {
+            const match = title.match(pattern);
+            if (match) {
+                return {
+                    cleanTitle: match[2].trim(),
+                    artist: match[1].trim()
+                };
+            }
         }
         
         return { cleanTitle: title, artist: null };
@@ -205,19 +211,32 @@ document.addEventListener('DOMContentLoaded', function() {
         statusDiv.innerHTML = `${platformLogos.apple} Fetching Apple Music track...`;
         
         try {
-            const response = await fetch(`https://itunes.apple.com/lookup?id=${trackId}&entity=song&country=US`);
+            // Try multiple regions including Japan
+            const regions = ['jp', 'us', 'gb'];
+            let track = null;
             
-            if (!response.ok) {
+            for (const region of regions) {
+                try {
+                    const response = await fetch(`https://itunes.apple.com/lookup?id=${trackId}&entity=song&country=${region}`);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        if (data.results && data.results.length > 0) {
+                            track = data.results[0];
+                            break;
+                        }
+                    }
+                } catch (error) {
+                    console.log(`Region ${region} failed:`, error);
+                    continue;
+                }
+            }
+            
+            if (!track) {
                 throw new Error('Apple Music track not found');
             }
             
-            const data = await response.json();
-            
-            if (!data.results || data.results.length === 0) {
-                throw new Error('Apple Music track not found');
-            }
-            
-            const track = data.results[0];
             const title = track.trackName;
             const artist = track.artistName;
             
@@ -270,43 +289,90 @@ document.addEventListener('DOMContentLoaded', function() {
     async function searchAppleMusic(title, artist) {
         console.log(`Searching Apple Music: "${title}" by "${artist}"`);
         
-        // Clean the title
-        let cleanTitle = title
-            .replace(/\([^)]*\)/g, '')
-            .replace(/\s*[-–—].*$/, '')
-            .replace(/\s*\([^)]*\)/g, '')
-            .replace(/\s*-\s*Topic$/i, '')
-            .trim();
+        // Try multiple search strategies for non-English content
+        const searchStrategies = [];
         
-        let searchQuery = cleanTitle;
+        // Strategy 1: Original Japanese text
         if (artist) {
-            searchQuery = `${cleanTitle} ${artist}`;
+            searchStrategies.push(`${title} ${artist}`);
         }
         
-        console.log(`Cleaned search: "${searchQuery}"`);
+        // Strategy 2: Title only (Japanese)
+        searchStrategies.push(title);
         
-        try {
-            const response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchQuery)}&entity=song&limit=5&media=music&country=US`);
-            
-            if (response.ok) {
-                const data = await response.json();
+        // Strategy 3: Clean version (remove common suffixes)
+        const cleanTitle = cleanJapaneseTitle(title);
+        if (cleanTitle !== title) {
+            if (artist) searchStrategies.push(`${cleanTitle} ${artist}`);
+            searchStrategies.push(cleanTitle);
+        }
+        
+        // Strategy 4: Try with Japanese region
+        if (artist) {
+            searchStrategies.push(`${title} ${artist}`);
+        }
+        
+        console.log('Search strategies:', searchStrategies);
+        
+        // Try each search strategy with different regions
+        const regions = ['jp', 'us', 'gb'];
+        
+        for (const strategy of searchStrategies) {
+            for (const region of regions) {
+                console.log(`Trying: "${strategy}" in region ${region}`);
                 
-                if (data.results && data.results.length > 0) {
-                    // Return the first result
-                    const firstResult = data.results[0];
-                    console.log(`Apple Music found: "${firstResult.trackName}" by ${firstResult.artistName}`);
+                try {
+                    const response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(strategy)}&entity=song&limit=5&media=music&country=${region}&lang=ja_jp`);
                     
-                    return {
-                        url: firstResult.trackViewUrl,
-                        title: firstResult.trackName,
-                        artist: firstResult.artistName
-                    };
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        if (data.results && data.results.length > 0) {
+                            console.log(`Found ${data.results.length} results in ${region}`);
+                            
+                            // Try to find the best match
+                            const bestMatch = findBestMatch(data.results, title, artist);
+                            if (bestMatch) {
+                                console.log(`✅ Apple Music match: "${bestMatch.trackName}" by ${bestMatch.artistName}`);
+                                return {
+                                    url: bestMatch.trackViewUrl,
+                                    title: bestMatch.trackName,
+                                    artist: bestMatch.artistName
+                                };
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.log(`Search failed for "${strategy}" in ${region}:`, error);
                 }
+                
+                // Small delay to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, 200));
             }
-        } catch (error) {
-            console.log('Apple Music search error:', error);
         }
         
+        console.log('❌ No Apple Music match found');
+        return null;
+    }
+    
+    function cleanJapaneseTitle(title) {
+        return title
+            .replace(/\([^)]*\)/g, '') // Remove parentheses
+            .replace(/\[[^\]]*\]/g, '') // Remove brackets
+            .replace(/\s*[-–—].*$/, '') // Remove after dash
+            .replace(/\s*[\(（].*[\)）].*$/, '') // Remove Japanese parentheses and content
+            .replace(/\s*[【].*[】].*$/, '') // Remove Japanese brackets and content
+            .replace(/\s*[〈].*[〉].*$/, '') // Remove Japanese angle brackets
+            .replace(/\s*[《].*[》].*$/, '') // Remove Japanese double angle brackets
+            .trim();
+    }
+    
+    function findBestMatch(results, targetTitle, targetArtist) {
+        // Simple matching - return first result for Japanese content
+        // Apple Music's relevance sorting is usually good for Japanese content
+        if (results.length > 0) {
+            return results[0];
+        }
         return null;
     }
     
@@ -341,7 +407,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (links.length === 0) {
-            resultDiv.innerHTML = '<p>❌ No alternative platforms found.</p>';
+            resultDiv.innerHTML = `
+                <p>❌ No alternative platforms found for this Japanese song.</p>
+                <p style="margin-top: 10px; font-size: 14px; color: var(--text-secondary);">
+                    Japanese songs can be harder to match across platforms due to different character encodings and regional availability.
+                </p>
+            `;
             return;
         }
         
