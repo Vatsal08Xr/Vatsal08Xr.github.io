@@ -248,21 +248,48 @@ document.addEventListener('DOMContentLoaded', function() {
         statusDiv.innerHTML = `${platformLogos.apple} Fetching Apple Music track...`;
         
         try {
-            // Try direct iTunes API lookup first
-            const itunesResponse = await fetch(`https://itunes.apple.com/lookup?id=${trackId}&entity=song`);
+            console.log('Fetching Apple Music track ID:', trackId);
             
-            if (!itunesResponse.ok) {
-                throw new Error('Apple Music track not found');
+            // Try multiple country codes
+            const countries = ['us', 'gb', 'ca'];
+            let track = null;
+            let itunesData = null;
+            
+            for (const country of countries) {
+                try {
+                    const itunesResponse = await fetch(`https://itunes.apple.com/lookup?id=${trackId}&entity=song&country=${country}`);
+                    
+                    if (itunesResponse.ok) {
+                        itunesData = await itunesResponse.json();
+                        console.log(`iTunes API response for ${country}:`, itunesData);
+                        
+                        if (itunesData.results && itunesData.results.length > 0) {
+                            // Find the track (not the collection/album)
+                            track = itunesData.results.find(item => 
+                                item.wrapperType === 'track' && item.kind === 'song'
+                            );
+                            
+                            if (!track && itunesData.results.length > 0) {
+                                // Fallback to first result if no track found
+                                track = itunesData.results.find(item => item.trackName) || itunesData.results[0];
+                            }
+                            
+                            if (track && track.trackName) {
+                                console.log('Found track:', track);
+                                break;
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.log(`Failed to fetch from ${country}:`, err);
+                    continue;
+                }
             }
             
-            const itunesData = await itunesResponse.json();
-            
-            if (!itunesData.results || itunesData.results.length === 0) {
-                throw new Error('Apple Music track not found');
+            if (!track || !track.trackName) {
+                throw new Error('Apple Music track not found or unavailable in supported regions');
             }
             
-            // Get the track info (skip first result if it's the album)
-            const track = itunesData.results.find(item => item.wrapperType === 'track') || itunesData.results[0];
             const title = track.trackName;
             const artist = track.artistName;
             
