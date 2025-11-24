@@ -1,4 +1,3 @@
-// Complete script.js with improved Apple Music search
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Script loaded successfully!');
     
@@ -223,7 +222,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Simple artist extraction function
+    // Improved artist extraction function
     function extractArtistFromTitle(title) {
         // Remove common YouTube suffixes
         let cleanTitle = title
@@ -231,14 +230,21 @@ document.addEventListener('DOMContentLoaded', function() {
             .replace(/\s*\([^)]*(?:official|lyrics?|video|audio|music|mv|hd|4k|live|cover)[^)]*\)/gi, '')
             .trim();
         
-        // Simple pattern: "Artist - Title"
-        const pattern = /^([^-–—]+?)\s*[-–—]\s*([^-–—]+)$/;
-        const match = cleanTitle.match(pattern);
+        // Multiple patterns for artist extraction
+        const patterns = [
+            /^([^-–—]+?)\s*[-–—]\s*([^-–—]+)$/, // "Artist - Title"
+            /^(.+?)\s*:\s*(.+)$/, // "Artist: Title"
+            /^(.+?)\s*\/\s*(.+)$/, // "Artist / Title"
+            /^(.+?)\s*"\s*(.+)"$/, // 'Artist "Title"'
+        ];
         
-        if (match) {
-            const part1 = match[1].trim();
-            const part2 = match[2].trim();
-            return { cleanTitle: part2, artist: part1 };
+        for (const pattern of patterns) {
+            const match = cleanTitle.match(pattern);
+            if (match) {
+                const part1 = match[1].trim();
+                const part2 = match[2].trim();
+                return { cleanTitle: part2, artist: part1 };
+            }
         }
         
         return { cleanTitle, artist: null };
@@ -251,16 +257,15 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Fetching Apple Music track ID:', trackId);
             
             // Try multiple country codes
-            const countries = ['us', 'gb', 'ca'];
+            const countries = ['us', 'gb', 'ca', 'au', 'de', 'fr', 'jp'];
             let track = null;
-            let itunesData = null;
             
             for (const country of countries) {
                 try {
                     const itunesResponse = await fetch(`https://itunes.apple.com/lookup?id=${trackId}&entity=song&country=${country}`);
                     
                     if (itunesResponse.ok) {
-                        itunesData = await itunesResponse.json();
+                        const itunesData = await itunesResponse.json();
                         console.log(`iTunes API response for ${country}:`, itunesData);
                         
                         if (itunesData.results && itunesData.results.length > 0) {
@@ -346,50 +351,46 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     async function searchAppleMusic(title, artist) {
-        if (!artist) {
-            console.log('No artist provided for Apple Music search');
-            return null;
+        console.log(`🔍 Searching Apple Music: "${title}" by "${artist || 'Unknown Artist'}"`);
+        
+        // Try multiple search strategies
+        const searchStrategies = [];
+        
+        // Strategy 1: Exact title + artist
+        if (artist) {
+            searchStrategies.push(`${title} ${artist}`);
         }
-
-        // Use exact title and artist for search
-        const query = `${title} ${artist}`;
-        console.log(`Searching Apple Music: "${query}"`);
-
-        try {
-            const itunesResponse = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=15&media=music`);
-            if (itunesResponse.ok) {
-                const data = await itunesResponse.json();
-                if (data.results && data.results.length > 0) {
-                    // Find the best match using exact title matching
-                    const bestMatch = findExactAppleMusicMatch(data.results, title, artist);
-                    if (bestMatch) {
-                        console.log(`✓ Apple Music match found: "${bestMatch.trackName}" by ${bestMatch.artistName}`);
-                        return {
-                            url: bestMatch.trackViewUrl,
-                            title: bestMatch.trackName,
-                            artist: bestMatch.artistName
-                        };
-                    }
-                }
-            }
-        } catch (error) {
-            console.log('Apple Music search failed:', error);
+        
+        // Strategy 2: Title only (remove featured artists)
+        const mainArtist = artist ? artist.split(/[,&]|feat\.?|ft\.?/)[0].trim() : null;
+        if (mainArtist && mainArtist !== artist) {
+            searchStrategies.push(`${title} ${mainArtist}`);
         }
-
-        // Fallback 1: Try with just the main artist (remove featured artists)
-        const mainArtist = artist.split(/[,&]|feat\.?|ft\.?/)[0].trim();
-        if (mainArtist !== artist) {
-            console.log(`Trying fallback with main artist only: "${mainArtist}"`);
-            const fallbackQuery = `${title} ${mainArtist}`;
+        
+        // Strategy 3: Title only
+        searchStrategies.push(title);
+        
+        // Strategy 4: Remove common suffixes from title
+        const cleanTitle = title.replace(/\([^)]*\)/g, '').replace(/\s*[-–—].*$/, '').trim();
+        if (cleanTitle !== title) {
+            if (artist) searchStrategies.push(`${cleanTitle} ${artist}`);
+            if (mainArtist) searchStrategies.push(`${cleanTitle} ${mainArtist}`);
+            searchStrategies.push(cleanTitle);
+        }
+        
+        console.log('Search strategies:', searchStrategies);
+        
+        for (const searchQuery of searchStrategies) {
+            console.log(`Trying search: "${searchQuery}"`);
             
             try {
-                const fallbackResponse = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(fallbackQuery)}&entity=song&limit=10&media=music`);
-                if (fallbackResponse.ok) {
-                    const data = await fallbackResponse.json();
+                const itunesResponse = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchQuery)}&entity=song&limit=10&media=music`);
+                if (itunesResponse.ok) {
+                    const data = await itunesResponse.json();
                     if (data.results && data.results.length > 0) {
-                        const bestMatch = findExactAppleMusicMatch(data.results, title, mainArtist);
+                        const bestMatch = findBestAppleMusicMatch(data.results, title, artist);
                         if (bestMatch) {
-                            console.log(`✓ Fallback Apple Music match found: "${bestMatch.trackName}" by ${bestMatch.artistName}`);
+                            console.log(`✓ Apple Music match found: "${bestMatch.trackName}" by ${bestMatch.artistName}`);
                             return {
                                 url: bestMatch.trackViewUrl,
                                 title: bestMatch.trackName,
@@ -399,43 +400,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             } catch (error) {
-                console.log('Fallback search failed');
+                console.log(`Search failed for "${searchQuery}":`, error);
             }
         }
-
-        // Fallback 2: Try with just the title (no artist)
-        console.log('Trying fallback with title only');
-        try {
-            const titleOnlyResponse = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(title)}&entity=song&limit=10&media=music`);
-            if (titleOnlyResponse.ok) {
-                const data = await titleOnlyResponse.json();
-                if (data.results && data.results.length > 0) {
-                    // Find any match by this artist
-                    const artistMatch = data.results.find(track => 
-                        track.artistName.toLowerCase().includes(artist.toLowerCase()) ||
-                        artist.toLowerCase().includes(track.artistName.toLowerCase())
-                    );
-                    if (artistMatch) {
-                        console.log(`✓ Title-only fallback match found: "${artistMatch.trackName}" by ${artistMatch.artistName}`);
-                        return {
-                            url: artistMatch.trackViewUrl,
-                            title: artistMatch.trackName,
-                            artist: artistMatch.artistName
-                        };
-                    }
-                }
-            }
-        } catch (error) {
-            console.log('Title-only fallback failed');
-        }
-
-        console.log('❌ No Apple Music match found after all fallbacks');
+        
+        console.log('❌ No Apple Music match found after all strategies');
         return null;
     }
 
-    // Updated matching function with lower threshold
-    function findExactAppleMusicMatch(results, targetTitle, targetArtist) {
-        console.log(`Looking for exact match: "${targetTitle}" by "${targetArtist}"`);
+    // Improved matching function with better scoring
+    function findBestAppleMusicMatch(results, targetTitle, targetArtist) {
+        console.log(`Looking for best match: "${targetTitle}" by "${targetArtist || 'Unknown Artist'}"`);
         
         const scoredResults = results.map(track => {
             const trackTitle = track.trackName;
@@ -443,37 +418,45 @@ document.addEventListener('DOMContentLoaded', function() {
             
             let score = 0;
             
-            // Exact title match is most important
-            if (trackTitle.toLowerCase() === targetTitle.toLowerCase()) {
-                score += 50; // Perfect title match
+            // Title matching (most important)
+            const trackTitleLower = trackTitle.toLowerCase();
+            const targetTitleLower = targetTitle.toLowerCase();
+            
+            if (trackTitleLower === targetTitleLower) {
+                score += 40; // Perfect title match
+            } else if (trackTitleLower.includes(targetTitleLower) || targetTitleLower.includes(trackTitleLower)) {
+                score += 25; // Partial title match
             } else {
-                // Partial title match with penalty
-                const trackTitleLower = trackTitle.toLowerCase();
-                const targetTitleLower = targetTitle.toLowerCase();
-                
-                if (trackTitleLower.includes(targetTitleLower) || targetTitleLower.includes(trackTitleLower)) {
-                    score += 20; // Partial title match
-                } else {
-                    score -= 10; // Reduced penalty for title mismatch
-                }
+                // Calculate title similarity
+                const titleSimilarity = calculateSimilarity(trackTitleLower, targetTitleLower);
+                score += titleSimilarity * 20;
             }
             
-            // Exact artist match is very important
-            if (trackArtist.toLowerCase() === targetArtist.toLowerCase()) {
-                score += 40; // Perfect artist match
-            } else {
-                // Partial artist match with penalty
+            // Artist matching (important but less than title)
+            if (targetArtist) {
                 const trackArtistLower = trackArtist.toLowerCase();
                 const targetArtistLower = targetArtist.toLowerCase();
                 
-                if (trackArtistLower.includes(targetArtistLower) || targetArtistLower.includes(trackArtistLower)) {
-                    score += 15; // Partial artist match
+                if (trackArtistLower === targetArtistLower) {
+                    score += 30; // Perfect artist match
+                } else if (trackArtistLower.includes(targetArtistLower) || targetArtistLower.includes(trackArtistLower)) {
+                    score += 20; // Partial artist match
                 } else {
-                    score -= 20; // Reduced penalty for artist mismatch
+                    // Calculate artist similarity
+                    const artistSimilarity = calculateSimilarity(trackArtistLower, targetArtistLower);
+                    score += artistSimilarity * 15;
                 }
+            } else {
+                // No artist provided, give baseline score
+                score += 10;
             }
             
-            console.log(`  "${trackTitle}" by "${trackArtist}" - score: ${score}`);
+            // Bonus for exact matches in key fields
+            if (trackTitleLower === targetTitleLower && targetArtist && trackArtist.toLowerCase() === targetArtist.toLowerCase()) {
+                score += 20; // Bonus for perfect match
+            }
+            
+            console.log(`  "${trackTitle}" by "${trackArtist}" - score: ${score.toFixed(1)}`);
             
             return { track, score };
         });
@@ -483,14 +466,33 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const bestMatch = scoredResults[0];
         
-        // Lower threshold to 20 to catch more matches
-        if (bestMatch && bestMatch.score >= 20) {
-            console.log(`✓ Best match score: ${bestMatch.score}`);
+        // Lower threshold to catch more matches
+        if (bestMatch && bestMatch.score >= 15) {
+            console.log(`✓ Best match score: ${bestMatch.score.toFixed(1)}`);
             return bestMatch.track;
         }
         
         console.log('✗ No good match found');
         return null;
+    }
+    
+    // Simple string similarity function
+    function calculateSimilarity(str1, str2) {
+        const longer = str1.length > str2.length ? str1 : str2;
+        const shorter = str1.length > str2.length ? str2 : str1;
+        
+        if (longer.length === 0) return 1.0;
+        
+        // Check if one string contains the other
+        if (longer.includes(shorter)) return 0.8;
+        
+        // Simple character-based similarity
+        let matches = 0;
+        for (let i = 0; i < Math.min(shorter.length, 10); i++) {
+            if (longer.includes(shorter[i])) matches++;
+        }
+        
+        return matches / Math.min(shorter.length, 10);
     }
     
     function showResults(title, artist, platforms) {
@@ -524,7 +526,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (links.length === 0) {
-            resultDiv.innerHTML = '<p>❌ No alternative platforms found.</p>';
+            resultDiv.innerHTML = `
+                <p>❌ No alternative platforms found for "${title}" by ${artist}.</p>
+                <p style="margin-top: 10px; font-size: 14px; color: var(--text-secondary);">
+                    Try searching manually on the platforms.
+                </p>
+            `;
             return;
         }
         
